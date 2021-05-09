@@ -46,6 +46,21 @@ func (g *GsyncStore) Push(root, parentId string) {
 	}
 }
 
+func (g *GsyncStore) Pull(root, parentId string) {
+	q := fmt.Sprintf("'%s' in parents", parentId)
+	list, err := g.Service.Files.List().Q(q).Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range list.Files {
+		fmt.Printf("Name: %s\n Type: %s\n Path: %s\n", f.Name, f.MimeType, root)
+		if f.MimeType == "application/vnd.google-apps.folder" {
+			g.Pull(fmt.Sprintf("/%s/%s", root, f.Name), f.Id)
+		}
+	}
+}
+
 func (g *GsyncStore) GetOrCreateRemote(name string, isDir bool, parentId string) *drive.File {
 	file := &drive.File{Name: name}
 

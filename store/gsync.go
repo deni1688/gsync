@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 
 	"google.golang.org/api/drive/v3"
 )
@@ -18,7 +19,7 @@ type GsyncStore struct {
 func (g *GsyncStore) Push(root, parentId string) {
 	files, err := ioutil.ReadDir(root)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Could not read dir %s: %v\n", root, err)
 	}
 
 	for _, f := range files {
@@ -34,14 +35,14 @@ func (g *GsyncStore) Push(root, parentId string) {
 
 		media, err := os.Open(path)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Could not open %s: %v\n", path, err)
 		}
 		defer media.Close()
 
 		file := g.GetOrCreateRemote(f.Name(), false, parentId)
 		file, err = g.Service.Files.Update(file.Id, &drive.File{Name: file.Name, MimeType: file.MimeType}).Media(media).Do()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Could not update file %s: %v\n", file.Name, err)
 		}
 	}
 }
@@ -50,13 +51,34 @@ func (g *GsyncStore) Pull(root, parentId string) {
 	q := fmt.Sprintf("'%s' in parents", parentId)
 	list, err := g.Service.Files.List().Q(q).Do()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Could not fetch file list: %v\n", err)
 	}
 
 	for _, f := range list.Files {
-		fmt.Printf("Name: %s\n Type: %s\n Path: %s\n", f.Name, f.MimeType, root)
+		fileFullPath := fmt.Sprintf("/%s/%s", root, f.Name)
 		if f.MimeType == "application/vnd.google-apps.folder" {
-			g.Pull(fmt.Sprintf("/%s/%s", root, f.Name), f.Id)
+			g.Pull(fileFullPath, f.Id)
+			continue
+		}
+
+		if strings.Contains(f.MimeType, "google-apps") {
+			continue
+		}
+
+		resp, err := g.Service.Files.Get(f.Id).Download()
+		if err != nil {
+			log.Fatalf("Could not fetch file %s in %s: %v\n", f.Name, root, err)
+		}
+		defer resp.Body.Close()
+
+		bytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Fatalf("Could read file %s in %s: %v\n", f.Name, root, err)
+		}
+
+		err = os.WriteFile(fileFullPath, bytes, 0666)
+		if err != nil {
+			log.Fatalf("Could read file %s in %s: %v\n", f.Name, root, err)
 		}
 	}
 }

@@ -48,7 +48,7 @@ func (g *GsyncStore) Push(root, parentId string) {
 }
 
 func (g *GsyncStore) Pull(root, parentId string) {
-	q := fmt.Sprintf("'%s' in parents", parentId)
+	q := fmt.Sprintf("'%s' in parents and trashed = false", parentId)
 	list, err := g.Service.Files.List().Q(q).Do()
 	if err != nil {
 		log.Fatalf("Could not fetch file list: %v\n", err)
@@ -100,7 +100,7 @@ func (g *GsyncStore) GetOrCreateRemote(name string, isDir bool, parentId string)
 		file.Parents = []string{parentId}
 	}
 
-	q := fmt.Sprintf("name = '%s'", name)
+	q := fmt.Sprintf("name = '%s' and trashed = false", name)
 
 	list, err := g.Service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
 	if err != nil {

@@ -57,6 +57,10 @@ func (g *GsyncStore) Pull(root, parentId string) {
 	for _, f := range list.Files {
 		fileFullPath := fmt.Sprintf("/%s/%s", root, f.Name)
 		if f.MimeType == "application/vnd.google-apps.folder" {
+			if _, err := os.Stat(fileFullPath); os.IsNotExist(err) {
+				os.Mkdir(fileFullPath, 0700)
+			}
+
 			g.Pull(fileFullPath, f.Id)
 			continue
 		}
@@ -76,9 +80,9 @@ func (g *GsyncStore) Pull(root, parentId string) {
 			log.Fatalf("Could read file %s in %s: %v\n", f.Name, root, err)
 		}
 
-		err = os.WriteFile(fileFullPath, bytes, 0666)
+		err = os.WriteFile(fileFullPath, bytes, 0700)
 		if err != nil {
-			log.Fatalf("Could read file %s in %s: %v\n", f.Name, root, err)
+			log.Fatalf("Could write file %s in %s: %v\n", f.Name, root, err)
 		}
 	}
 }

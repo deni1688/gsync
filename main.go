@@ -19,7 +19,7 @@ func main() {
 
 	switch getCommand() {
 	case "pull":
-		store.Pull("Gsync", store.RemoteRoot.Id)
+		store.Pull(localPath, store.RemoteRoot.Id)
 	case "push":
 		store.Push(localPath, store.RemoteRoot.Id)
 	default:

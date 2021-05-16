@@ -3,7 +3,6 @@ package main
 import (
 	"deni1688/gsync/drive"
 	"deni1688/gsync/store"
-	"fmt"
 	"os"
 )
 
@@ -22,8 +21,7 @@ func main() {
 		store.Pull(localPath, store.RemoteRoot.Id)
 	case "push":
 		store.Push(localPath, store.RemoteRoot.Id)
-	default:
-		fmt.Println("pull or push command is required")
+	default: // do nothing
 	}
 }
 

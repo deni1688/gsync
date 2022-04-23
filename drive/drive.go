@@ -7,6 +7,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -110,7 +111,7 @@ func New() *drive.Service {
 		log.Fatalf("Unable to parse client secret file to config: %v", err)
 	}
 
-	service, err := drive.New(getClient(config))
+	service, err := drive.NewService(context.TODO(), option.WithHTTPClient(getClient(config)))
 	if err != nil {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}

@@ -3,26 +3,25 @@ package main
 import (
 	"deni1688/gsync/drive"
 	"deni1688/gsync/store"
+	"log"
 	"os"
 )
 
 func main() {
 	home := os.Getenv("HOME")
-
 	localPath := home + "/Gsync"
 	localConfigPath := home + "/.gsync"
 
-	if _, err := os.Stat(localPath); os.IsNotExist(err) {
-		os.Mkdir(localPath, 0700)
-	}
-
-	if _, err := os.Stat(localConfigPath); os.IsNotExist(err) {
-		os.Mkdir(localConfigPath, 0700)
-	}
+	checkExists(localPath)
+	checkExists(localConfigPath)
 
 	service := drive.New()
-	store := store.New(service, localPath)
+	gsyncStore := store.New(service, localPath)
 
+	handleCommands(gsyncStore, localPath)
+}
+
+func handleCommands(store *store.GsyncStore, localPath string) {
 	switch getCommand() {
 	case "pull":
 		store.Pull(localPath, store.RemoteRoot.Id)
@@ -40,4 +39,12 @@ func getCommand() string {
 	}
 
 	return args[1]
+}
+
+func checkExists(path string) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		if err := os.Mkdir(path, 0700); err != nil {
+			log.Fatalf("Unable to create directory: %v", err)
+		}
+	}
 }

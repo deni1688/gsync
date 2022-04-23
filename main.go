@@ -8,9 +8,16 @@ import (
 
 func main() {
 	home := os.Getenv("HOME")
+
 	localPath := home + "/Gsync"
+	localConfigPath := home + "/.gsync"
+
 	if _, err := os.Stat(localPath); os.IsNotExist(err) {
 		os.Mkdir(localPath, 0700)
+	}
+
+	if _, err := os.Stat(localConfigPath); os.IsNotExist(err) {
+		os.Mkdir(localConfigPath, 0700)
 	}
 
 	service := drive.New()

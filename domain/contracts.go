@@ -23,5 +23,4 @@ type GsyncServiceContract interface {
 	Pull() error
 	Push() error
 	Sync() error
-	authorize() error
 }

@@ -8,11 +8,6 @@ func NewGsyncService(store SynchronizableStorageContract) GsyncServiceContract {
 	return &gsyncService{store: store}
 }
 
-func (g gsyncService) authorize() error {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (g gsyncService) Pull() error {
 	//TODO implement me
 	panic("implement me")

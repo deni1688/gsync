@@ -1,30 +1,46 @@
 package googledrive
 
-import "deni1688/gsync/domain"
+import (
+	"deni1688/gsync/domain"
+)
 
-type GoogleDriveStorage struct {
+type store struct {
 }
 
-func (g GoogleDriveStorage) Authorize() error {
+func (s store) GetAuthorizationToken(credentialsPath string) ([]byte, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func NewGoogleDriveStorage() domain.SynchronizableStorageContract {
-	return &GoogleDriveStorage{}
-}
-
-func (g GoogleDriveStorage) Pull(option ...domain.SyncOption) error {
+func (s store) GetFile(info domain.FileInfo) ([]byte, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (g GoogleDriveStorage) Push(option ...domain.SyncOption) error {
+func (s store) CreateFile(info, FileInfo, data []byte) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (g GoogleDriveStorage) Sync(option ...domain.SyncOption) error {
+func (s store) UpdateFile(info domain.FileInfo, data []byte) error {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (s store) DeleteFile(info domain.FileInfo) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s store) ListFiles(path string) ([]domain.FileInfo, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s store) IsDir(info domain.FileInfo) bool {
+	return info.MimeType == "application/vnd.google-apps.folder"
+}
+
+func New() domain.SynchronizableStoreContract {
+	return &store{}
 }

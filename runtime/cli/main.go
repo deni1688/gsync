@@ -5,11 +5,12 @@ import (
 	"deni1688/gsync/infra/cli"
 	"deni1688/gsync/infra/googledrive"
 	"log"
+	"os"
 )
 
 func main() {
 	googleDriverStore := googledrive.New()
-	gsyncService := domain.NewGsyncService(googleDriverStore)
+	gsyncService := domain.NewGsyncService(os.Getenv("LOCAL_GSYNC_DIR"), googleDriverStore)
 	runtime := cli.New(gsyncService)
 
 	if err := runtime.Execute(); err != nil {

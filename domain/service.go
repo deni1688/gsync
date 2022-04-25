@@ -1,10 +1,10 @@
 package domain
 
 type gsyncService struct {
-	store GsyncStoreContract
+	store SynchronizableStorageContract
 }
 
-func NewGsyncService(store GsyncStoreContract) GsyncServiceContract {
+func NewGsyncService(store SynchronizableStorageContract) GsyncServiceContract {
 	return &gsyncService{store: store}
 }
 

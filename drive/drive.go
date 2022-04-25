@@ -40,7 +40,7 @@ func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 
 	log.Println("Waiting for auth code...")
 	code := <-ch
-	fmt.Println("Received auth code!")
+	log.Println("Received auth code!")
 
 	stopTemporaryServer(srv)
 

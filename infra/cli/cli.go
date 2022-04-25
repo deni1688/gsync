@@ -6,11 +6,11 @@ import (
 	"log"
 )
 
-type CliRuntime struct {
+type Runtime struct {
 	rootCmd *cobra.Command
 }
 
-func NewCliRuntime(service domain.GsyncServiceContract) *CliRuntime {
+func New(service domain.GsyncServiceContract) *Runtime {
 	rootCmd := &cobra.Command{
 		Use:   "gsync",
 		Short: "gsync is a tool to sync files between a remote service and local directory",
@@ -20,10 +20,10 @@ func NewCliRuntime(service domain.GsyncServiceContract) *CliRuntime {
 	rootCmd.AddCommand(pushCmd(service))
 	rootCmd.AddCommand(syncCmd(service))
 
-	return &CliRuntime{rootCmd}
+	return &Runtime{rootCmd}
 }
 
-func (c *CliRuntime) Execute() error {
+func (c *Runtime) Execute() error {
 	return c.rootCmd.Execute()
 }
 

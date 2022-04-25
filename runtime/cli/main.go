@@ -8,11 +8,11 @@ import (
 )
 
 func main() {
-	googleDriverStorage := googledrive.NewGoogleDriveStorage()
-	gsyncService := domain.NewGsyncService(googleDriverStorage)
-	cliRuntime := cli.NewCliRuntime(gsyncService)
+	googleDriverStore := googledrive.New()
+	gsyncService := domain.NewGsyncService(googleDriverStore)
+	runtime := cli.New(gsyncService)
 
-	if err := cliRuntime.Execute(); err != nil {
+	if err := runtime.Execute(); err != nil {
 		log.Fatalf("Error starting the CLI runtime: %v", err)
 	}
 }

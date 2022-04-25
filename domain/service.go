@@ -1,24 +1,40 @@
 package domain
 
 type gsyncService struct {
-	store SynchronizableStorageContract
+	store SynchronizableStoreContract
 }
 
-func NewGsyncService(store SynchronizableStorageContract) GsyncServiceContract {
-	return &gsyncService{store: store}
+func NewGsyncService(store SynchronizableStoreContract) GsyncServiceContract {
+	return &gsyncService{store}
 }
 
-func (g gsyncService) Pull() error {
-	//TODO implement me
-	panic("implement me")
+func (g gsyncService) Pull(options ...SyncOption) error {
+	var err error
+
+	for _, option := range options {
+		err = g.store.Pull(option)
+	}
+
+	return err
 }
 
-func (g gsyncService) Push() error {
-	//TODO implement me
-	panic("implement me")
+func (g gsyncService) Push(options ...SyncOption) error {
+	var err error
+
+	for _, option := range options {
+		err = g.store.Push(option)
+	}
+
+	return err
 }
 
-func (g gsyncService) Sync() error {
-	//TODO implement me
-	panic("implement me")
+func (g gsyncService) Sync(options ...SyncOption) error {
+	err := g.Pull(options...)
+	err = g.Push(options...)
+
+	return err
+}
+
+func (g gsyncService) Authorize() error {
+	return g.store.Authorize()
 }

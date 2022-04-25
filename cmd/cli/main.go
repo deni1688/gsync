@@ -1,8 +1,8 @@
 package main
 
 import (
-	"deni1688/gsync/drive"
-	"deni1688/gsync/store"
+	"deni1688/gsync/infra/drive"
+	"deni1688/gsync/infra/store"
 	"log"
 	"os"
 )

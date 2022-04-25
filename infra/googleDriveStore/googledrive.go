@@ -1,4 +1,4 @@
-package googledrive
+package googleDriveStore
 
 import (
 	"deni1688/gsync/domain"

@@ -24,8 +24,8 @@ func (s store) GetFile(info domain.FileInfo) ([]byte, error) {
 func (s store) CreateFile(info domain.FileInfo, data []byte) error {
 	file := &drive.File{Name: info.Name, MimeType: info.MimeType}
 
-	if info.ParentId != "" {
-		file.Parents = []string{info.ParentId}
+	if info.Parent != "" {
+		file.Parents = []string{info.Parent}
 	}
 
 	q := fmt.Sprintf("name = '%s' and trashed = false", info.Name)

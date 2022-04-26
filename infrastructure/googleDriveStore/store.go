@@ -17,6 +17,21 @@ type store struct {
 	service *drive.Service
 }
 
+func (s store) CreateDirectory(name string) (domain.FileInfo, error) {
+	file := &drive.File{Name: name, MimeType: "application/vnd.google-apps.folder"}
+
+	file, err := s.service.Files.Create(file).Do()
+	if err != nil {
+		return domain.FileInfo{}, err
+	}
+
+	return domain.FileInfo{
+		Id:       file.Id,
+		Name:     file.Name,
+		MimeType: file.MimeType,
+	}, nil
+}
+
 func (s store) GetFile(info domain.FileInfo) ([]byte, error) {
 	resp, err := s.service.Files.Get(info.Id).Download()
 	if err != nil {
@@ -27,7 +42,7 @@ func (s store) GetFile(info domain.FileInfo) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-func (s store) CreateFile(info domain.FileInfo, data []byte) error {
+func (s store) CreateFile(info domain.FileInfo, data []byte) (domain.FileInfo, error) {
 	file := &drive.File{Name: info.Name, MimeType: info.MimeType}
 
 	if info.Parent != "" {
@@ -39,8 +54,9 @@ func (s store) CreateFile(info domain.FileInfo, data []byte) error {
 		log.Fatalf("Could not create file %s: %v", info.Name, err)
 	}
 
-	fmt.Printf("Found %s %s...upadting\n", info.MimeType, info.Name)
-	return s.UpdateFile(info, data)
+	info.Id = file.Id
+
+	return info, s.UpdateFile(info, data)
 }
 
 func (s store) UpdateFile(info domain.FileInfo, data []byte) error {

@@ -7,8 +7,9 @@ import (
 )
 
 type gsyncService struct {
-	localGsyncDir string
-	store         SynchronizableStoreContract
+	remoteGsyncDir string
+	localGsyncDir  string
+	store          SynchronizableStoreContract
 }
 
 func NewGsyncService(localGsyncDir string, store SynchronizableStoreContract) GsyncServiceContract {
@@ -27,7 +28,12 @@ func NewGsyncService(localGsyncDir string, store SynchronizableStoreContract) Gs
 		log.Println("Local gsync directory created in ", localGsyncDir)
 	}
 
-	return &gsyncService{localGsyncDir, store}
+	info, err := store.CreateDirectory("Gsync")
+	if err != nil {
+		log.Fatalf("Error creating remote Gsync directory: %v", err)
+	}
+
+	return &gsyncService{info.Id, localGsyncDir, store}
 }
 
 func (g gsyncService) Pull(path string) error {

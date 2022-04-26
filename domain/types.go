@@ -16,4 +16,5 @@ type FileInfo struct {
 	Name     string
 	Size     int64
 	MimeType string
+	ParentId string
 }

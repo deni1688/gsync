@@ -30,7 +30,7 @@ func NewGsyncService(localGsyncDir string, store SynchronizableStoreContract) Gs
 	return &gsyncService{localGsyncDir, store}
 }
 
-// TODO: move all the drive auth logic to the googleDriveStore package since its the only place where it is used
+// TODO: move all the googleDriveService auth logic to the googleDriveStore package since its the only place where it is used
 func (g gsyncService) Authorize() error {
 	log.Println("Getting authorization token...")
 

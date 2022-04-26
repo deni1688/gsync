@@ -1,14 +1,10 @@
-package drive
+package googleDriveStore
 
 import (
 	"encoding/json"
 	"fmt"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"google.golang.org/api/drive/v3"
-	"google.golang.org/api/option"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -98,23 +94,4 @@ func saveToken(path string, token *oauth2.Token) {
 	}
 	defer f.Close()
 	json.NewEncoder(f).Encode(token)
-}
-
-func New() *drive.Service {
-	b, err := ioutil.ReadFile(os.Getenv("HOME") + "/.gsync/credentials.json")
-	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
-	}
-
-	config, err := google.ConfigFromJSON(b, drive.DriveScope)
-	if err != nil {
-		log.Fatalf("Unable to parse client secret file to config: %v", err)
-	}
-
-	service, err := drive.NewService(context.TODO(), option.WithHTTPClient(getClient(config)))
-	if err != nil {
-		log.Fatalf("Unable to retrieve Drive client: %v", err)
-	}
-
-	return service
 }

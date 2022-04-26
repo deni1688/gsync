@@ -1,4 +1,4 @@
-package security
+package googleDriveStore
 
 import (
 	"crypto/aes"
@@ -9,19 +9,19 @@ import (
 	"log"
 )
 
-type security struct {
+type securityKey struct {
 	key []byte
 }
 
-func New(key string) *security {
+func NewSecurityKey(key string) *securityKey {
 	if len(key) != 32 {
 		log.Fatal("key must be a 32 characters long")
 	}
 
-	return &security{[]byte(key)}
+	return &securityKey{[]byte(key)}
 }
 
-func (s *security) encrypt(plaintext []byte) ([]byte, error) {
+func (s *securityKey) encrypt(plaintext []byte) ([]byte, error) {
 	c, err := aes.NewCipher(s.key)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (s *security) encrypt(plaintext []byte) ([]byte, error) {
 	return gcm.Seal(nonce, nonce, plaintext, nil), nil
 }
 
-func (s *security) decrypt(ciphertext []byte) ([]byte, error) {
+func (s *securityKey) decrypt(ciphertext []byte) ([]byte, error) {
 	c, err := aes.NewCipher(s.key)
 	if err != nil {
 		return nil, err

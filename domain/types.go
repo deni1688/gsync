@@ -13,6 +13,7 @@ type SyncOption struct {
 }
 
 type FileInfo struct {
+	Id       string
 	Name     string
 	Size     int64
 	MimeType string

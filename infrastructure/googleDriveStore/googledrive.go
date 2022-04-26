@@ -46,19 +46,19 @@ func (s store) CreateFile(info domain.FileInfo, data []byte) error {
 	}
 
 	fmt.Printf("Found %s %s...upadting\n", info.MimeType, info.Name)
-	file = list.Files[0]
-	file, err = s.service.Files.Update(file.Id, &drive.File{Name: file.Name, MimeType: file.MimeType}).Media(bytes.NewReader(data)).Do()
+	return s.UpdateFile(info, data)
+}
+
+func (s store) UpdateFile(info domain.FileInfo, data []byte) error {
+	file := &drive.File{Id: info.Id, Name: info.Name, MimeType: info.MimeType}
+
+	file, err := s.service.Files.Update(file.Id, &drive.File{Name: file.Name, MimeType: file.MimeType}).Media(bytes.NewReader(data)).Do()
 	if err != nil {
 		log.Printf("Could update file: %v", err)
 		return err
 	}
 
 	return nil
-}
-
-func (s store) UpdateFile(info domain.FileInfo, data []byte) error {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (s store) DeleteFile(info domain.FileInfo) error {

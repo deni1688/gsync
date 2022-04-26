@@ -12,7 +12,7 @@ func main() {
 	credentialsPath := os.Getenv("GOOGLE_OAUTH_CREDENTIALS")
 	localGsyncDir := os.Getenv("LOCAL_GSYNC_DIR")
 
-	googleDriverStore := googleDriveStore.NewSecurityKey(credentialsPath)
+	googleDriverStore := googleDriveStore.New(credentialsPath)
 	gsyncService := domain.NewGsyncService(localGsyncDir, googleDriverStore)
 	runtime := cli.New(gsyncService)
 

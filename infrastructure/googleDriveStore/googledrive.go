@@ -8,6 +8,7 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
+	"io"
 	"log"
 	"os"
 )
@@ -17,8 +18,13 @@ type store struct {
 }
 
 func (s store) GetFile(info domain.FileInfo) ([]byte, error) {
-	//TODO implement me
-	panic("implement me")
+	resp, err := s.service.Files.Get(info.Id).Download()
+	if err != nil {
+		log.Fatalf("Could not fetch file %s: %v", info.Name, err)
+	}
+	defer resp.Body.Close()
+
+	return io.ReadAll(resp.Body)
 }
 
 func (s store) CreateFile(info domain.FileInfo, data []byte) error {
@@ -28,21 +34,9 @@ func (s store) CreateFile(info domain.FileInfo, data []byte) error {
 		file.Parents = []string{info.Parent}
 	}
 
-	q := fmt.Sprintf("name = '%s' and trashed = false", info.Name)
-
-	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
+	file, err := s.service.Files.Create(file).Do()
 	if err != nil {
-		log.Printf("Could not fetch list: %v", err)
-		return err
-	}
-
-	if len(list.Files) == 0 {
-		fmt.Printf("Could not find %s %s...creating\n", info.MimeType, info.Name)
-		file, err = s.service.Files.Create(file).Do()
-
-		if err != nil {
-			return err
-		}
+		log.Fatalf("Could not create file %s: %v", info.Name, err)
 	}
 
 	fmt.Printf("Found %s %s...upadting\n", info.MimeType, info.Name)
@@ -61,14 +55,24 @@ func (s store) UpdateFile(info domain.FileInfo, data []byte) error {
 	return nil
 }
 
-func (s store) DeleteFile(info domain.FileInfo) error {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (s store) ListFiles(path string) ([]domain.FileInfo, error) {
-	//TODO implement me
-	panic("implement me")
+	q := fmt.Sprintf("name = '%s' and trashed = false", path)
+
+	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
+	if err != nil {
+		return nil, err
+	}
+
+	var files []domain.FileInfo
+	for _, f := range list.Files {
+		files = append(files, domain.FileInfo{
+			Id:       f.Id,
+			Name:     f.Name,
+			MimeType: f.MimeType,
+		})
+	}
+
+	return files, nil
 }
 
 func (s store) IsDir(info domain.FileInfo) bool {

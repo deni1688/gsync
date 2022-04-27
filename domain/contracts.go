@@ -5,7 +5,7 @@ type SynchronizableStoreContract interface {
 	CreateFile(info FileInfo, data []byte) (FileInfo, error)
 	CreateDirectory(name string) (FileInfo, error)
 	UpdateFile(info FileInfo, data []byte) error
-	ListFilesInDirectory(root, directory string) ([]FileInfo, error)
+	ListFiles(root, directory string) ([]FileInfo, error)
 	IsDir(info FileInfo) bool
 }
 

@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 type store struct {
@@ -96,7 +97,7 @@ func (s store) UpdateFile(info domain.FileInfo, data []byte) error {
 	return nil
 }
 
-func (s store) ListFilesInDirectory(root, parentId string) ([]domain.FileInfo, error) {
+func (s store) ListFiles(root, parentId string) ([]domain.FileInfo, error) {
 	q := fmt.Sprintf("'%s' in parents and trashed = false", parentId)
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
 	if err != nil {
@@ -105,6 +106,10 @@ func (s store) ListFilesInDirectory(root, parentId string) ([]domain.FileInfo, e
 
 	var files []domain.FileInfo
 	for _, f := range list.Files {
+		if strings.Contains(f.MimeType, "google-apps") {
+			continue
+		}
+
 		files = append(files, domain.FileInfo{
 			Id:       f.Id,
 			Name:     f.Name,

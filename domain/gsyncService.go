@@ -42,7 +42,7 @@ func (g gsyncService) Pull(fi FileInfo) error {
 		fi.Path = g.localGsyncDir
 	}
 
-	files, err := g.store.ListFilesInDirectory(fi.Path, fi.Id)
+	files, err := g.store.ListFiles(fi.Path, fi.Id)
 	if err != nil {
 		return err
 	}

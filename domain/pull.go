@@ -40,12 +40,14 @@ func (g gsyncService) removeFilesFromLocal(fi FileInfo, files []FileInfo) error 
 
 		log.Printf("Removing %s", fullPath)
 
-		if err = os.Remove(fullPath); err != nil {
-			return err
+		if file.IsDir() {
+			err = os.RemoveAll(fullPath)
+		} else {
+			err = os.Remove(fullPath)
 		}
 	}
 
-	return nil
+	return err
 }
 
 func (g gsyncService) addFilesFromRemote(fi FileInfo, files []FileInfo) error {

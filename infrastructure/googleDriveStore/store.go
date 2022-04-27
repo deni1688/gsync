@@ -30,8 +30,9 @@ type store struct {
 	service *drive.Service
 }
 
-func (s store) CreateDirectory(name string) (domain.FileInfo, error) {
-	q := fmt.Sprintf("name = '%s' and trashed = false", name)
+func (s store) CreateDir(dirFileInfo domain.FileInfo) (domain.FileInfo, error) {
+	q := fmt.Sprintf("name = '%s' and trashed = false", dirFileInfo.Name)
+
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
 	if err != nil {
 		return domain.FileInfo{}, err
@@ -44,11 +45,16 @@ func (s store) CreateDirectory(name string) (domain.FileInfo, error) {
 			Name:     f.Name,
 			MimeType: f.MimeType,
 			ParentId: getParentId(f),
-			Path:     f.Name,
+			Path:     dirFileInfo.Path,
 		}, nil
 	}
 
-	file := &drive.File{Name: name, MimeType: "application/vnd.google-apps.folder"}
+	file := &drive.File{
+		Name:     dirFileInfo.Name,
+		MimeType: "application/vnd.google-apps.folder",
+		Parents:  []string{dirFileInfo.ParentId},
+	}
+
 	file, err = s.service.Files.Create(file).Do()
 	if err != nil {
 		return domain.FileInfo{}, err
@@ -59,7 +65,7 @@ func (s store) CreateDirectory(name string) (domain.FileInfo, error) {
 		Name:     file.Name,
 		MimeType: file.MimeType,
 		ParentId: getParentId(file),
-		Path:     file.Name,
+		Path:     dirFileInfo.Path,
 	}, nil
 }
 
@@ -96,27 +102,27 @@ func getExportMimeType(driveMimeType string) string {
 	return "application/octet-stream"
 }
 
-func (s store) CreateFile(info domain.FileInfo, data []byte) (domain.FileInfo, error) {
+func (s store) CreateFile(info domain.FileInfo) (domain.FileInfo, error) {
 	file := &drive.File{Name: info.Name, MimeType: info.MimeType}
 
 	if info.ParentId != "" {
 		file.Parents = []string{info.ParentId}
 	}
 
-	file, err := s.service.Files.Create(file).Do()
+	file, err := s.service.Files.Create(file).Media(bytes.NewReader(info.Data)).Do()
 	if err != nil {
-		log.Fatalf("Could not create file %s: %v", info.Name, err)
+		return domain.FileInfo{}, err
 	}
 
 	info.Id = file.Id
 
-	return info, s.UpdateFile(info, data)
+	return info, nil
 }
 
-func (s store) UpdateFile(info domain.FileInfo, data []byte) error {
+func (s store) UpdateFile(info domain.FileInfo) error {
 	file := &drive.File{Id: info.Id, Name: info.Name, MimeType: info.MimeType}
 
-	file, err := s.service.Files.Update(file.Id, &drive.File{Name: file.Name, MimeType: file.MimeType}).Media(bytes.NewReader(data)).Do()
+	file, err := s.service.Files.Update(file.Id, &drive.File{Name: file.Name, MimeType: file.MimeType}).Media(bytes.NewReader(info.Data)).Do()
 	if err != nil {
 		log.Printf("Could update file: %v", err)
 		return err
@@ -125,21 +131,23 @@ func (s store) UpdateFile(info domain.FileInfo, data []byte) error {
 	return nil
 }
 
-func (s store) ListFiles(root, parentId string) ([]domain.FileInfo, error) {
-	q := fmt.Sprintf("'%s' in parents and trashed = false", parentId)
+func (s store) ListFiles(parentFileInfo domain.FileInfo) ([]domain.FileInfo, error) {
+	q := fmt.Sprintf("'%s' in parents and trashed = false", parentFileInfo.Id)
+
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
 	if err != nil {
 		return nil, err
 	}
 
 	var files []domain.FileInfo
+
 	for _, f := range list.Files {
 		files = append(files, domain.FileInfo{
 			Id:       f.Id,
 			Name:     f.Name,
 			MimeType: f.MimeType,
 			ParentId: getParentId(f),
-			Path:     root + "/" + f.Name,
+			Path:     parentFileInfo.Path + "/" + f.Name,
 		})
 	}
 

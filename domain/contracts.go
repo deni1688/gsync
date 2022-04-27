@@ -2,10 +2,10 @@ package domain
 
 type SynchronizableStoreContract interface {
 	GetFile(info FileInfo) ([]byte, error)
-	CreateFile(info FileInfo, data []byte) (FileInfo, error)
-	CreateDirectory(name string) (FileInfo, error)
-	UpdateFile(info FileInfo, data []byte) error
-	ListFiles(root, directory string) ([]FileInfo, error)
+	CreateFile(info FileInfo) (FileInfo, error)
+	CreateDir(info FileInfo) (FileInfo, error)
+	UpdateFile(info FileInfo) error
+	ListFiles(parentFileInfo FileInfo) ([]FileInfo, error)
 	IsDir(info FileInfo) bool
 }
 

@@ -17,4 +17,5 @@ type FileInfo struct {
 	Name     string
 	MimeType string
 	Parent   string
+	Data     []byte
 }

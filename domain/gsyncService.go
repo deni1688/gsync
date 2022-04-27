@@ -37,11 +37,20 @@ func NewGsyncService(localGsyncDir string, store SynchronizableStoreContract) Gs
 }
 
 func (g gsyncService) Pull(path string) error {
+	info := FileInfo{}
+
 	if path == "" {
-		path = "Gsync"
+		info.Id = g.remoteGsyncDir
+	} else {
+		info.Name = path
+		inf, err := g.store.GetFile(info)
+		if err != nil {
+			return err
+		}
+		info = inf
 	}
 
-	files, err := g.store.ListFiles(path)
+	files, err := g.store.ListFiles(info.Id)
 	if err != nil {
 		return err
 	}
@@ -57,15 +66,15 @@ func (g gsyncService) Pull(path string) error {
 				}
 			}
 
-			return g.Pull(fullPath)
+			return g.Pull(info.Id)
 		}
 
-		data, err := g.store.GetFile(file)
+		info, err := g.store.GetFile(file)
 		if err != nil {
 			return err
 		}
 
-		return os.WriteFile(fullPath, data, 0700)
+		return os.WriteFile(fullPath, info.Data, 0700)
 	}
 
 	return nil

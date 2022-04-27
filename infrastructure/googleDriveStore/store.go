@@ -32,14 +32,26 @@ func (s store) CreateDirectory(name string) (domain.FileInfo, error) {
 	}, nil
 }
 
-func (s store) GetFile(info domain.FileInfo) ([]byte, error) {
+func (s store) GetFile(info domain.FileInfo) (domain.FileInfo, error) {
+	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(info.Name).Do()
+	if err != nil {
+		return info, err
+	}
+
+	if len(list.Files) == 0 {
+		return info, fmt.Errorf("file not found")
+	}
+
 	resp, err := s.service.Files.Get(info.Id).Download()
 	if err != nil {
-		log.Fatalf("Could not fetch file %s: %v", info.Name, err)
+		return info, err
 	}
 	defer resp.Body.Close()
 
-	return io.ReadAll(resp.Body)
+	info.Id = list.Files[0].Id
+	info.Data, err = io.ReadAll(resp.Body)
+
+	return info, err
 }
 
 func (s store) CreateFile(info domain.FileInfo, data []byte) (domain.FileInfo, error) {
@@ -71,9 +83,8 @@ func (s store) UpdateFile(info domain.FileInfo, data []byte) error {
 	return nil
 }
 
-func (s store) ListFiles(path string) ([]domain.FileInfo, error) {
-	q := fmt.Sprintf("name = '%s' and trashed = false", path)
-
+func (s store) ListFiles(parentId string) ([]domain.FileInfo, error) {
+	q := fmt.Sprintf("'%s' in parents and trashed = false", parentId)
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
 	if err != nil {
 		return nil, err

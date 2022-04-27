@@ -16,16 +16,14 @@ import (
 )
 
 var mimeTypeMap = map[string]string{
-	"application/vnd.google-apps.document":     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-	"application/vnd.google-apps.spreadsheet":  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-	"application/vnd.google-apps.presentation": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+	"application/vnd.google-apps.file":         "text/plain",
 	"application/vnd.google-apps.drawing":      "image/png",
-	"application/vnd.google-apps.photo":        "image/png",
-	"application/vnd.google-apps.form":         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-	"application/vnd.google-apps.file":         "application/octet-stream",
-	"application/vnd.google-apps.folder":       "folder",
-	"application/vnd.google-apps.audio":        "audio/mpeg",
+	"application/vnd.google-apps.photo":        "image/jpeg",
 	"application/vnd.google-apps.video":        "video/mp4",
+	"application/vnd.google-apps.audio":        "audio/mpeg",
+	"application/vnd.google-apps.spreadsheet":  "application/x-vnd.oasis.opendocument.spreadsheet",
+	"application/vnd.google-apps.document":     "application/vnd.oasis.opendocument.text",
+	"application/vnd.google-apps.presentation": "application/vnd.oasis.opendocument.presentation",
 }
 
 type store struct {
@@ -75,13 +73,14 @@ func getParentId(f *drive.File) string {
 func (s store) GetFile(info domain.FileInfo) ([]byte, error) {
 	var err error
 	resp := new(http.Response)
-	defer resp.Body.Close()
 
-	if !strings.Contains(info.MimeType, "google-apps") {
-		resp, err = s.service.Files.Get(info.Id).Download()
+	if strings.Contains(info.MimeType, "google-apps") {
+		resp, err = s.service.Files.Export(info.Id, getExportMimeType(info.MimeType)).Download()
 	} else {
-		resp, err = s.service.Files.Export(info.Id, getMimeType(info.MimeType)).Download()
+		resp, err = s.service.Files.Get(info.Id).Download()
 	}
+
+	defer resp.Body.Close()
 
 	if err != nil {
 		return nil, err
@@ -90,12 +89,11 @@ func (s store) GetFile(info domain.FileInfo) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-func getMimeType(googleDriveMimeType string) string {
-	if mimeType, ok := mimeTypeMap[googleDriveMimeType]; ok {
+func getExportMimeType(driveMimeType string) string {
+	if mimeType, ok := mimeTypeMap[driveMimeType]; ok {
 		return mimeType
 	}
-
-	return "unknown"
+	return "application/octet-stream"
 }
 
 func (s store) CreateFile(info domain.FileInfo, data []byte) (domain.FileInfo, error) {
@@ -136,10 +134,6 @@ func (s store) ListFiles(root, parentId string) ([]domain.FileInfo, error) {
 
 	var files []domain.FileInfo
 	for _, f := range list.Files {
-		if getMimeType(f.MimeType) == "unknown" && f.MimeType != "application/vnd.google-apps.folder" {
-			continue
-		}
-
 		files = append(files, domain.FileInfo{
 			Id:       f.Id,
 			Name:     f.Name,

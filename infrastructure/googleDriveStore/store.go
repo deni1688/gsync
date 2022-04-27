@@ -18,9 +18,25 @@ type store struct {
 }
 
 func (s store) CreateDirectory(name string) (domain.FileInfo, error) {
-	file := &drive.File{Name: name, MimeType: "application/vnd.google-apps.folder"}
+	q := fmt.Sprintf("name = '%s' and trashed = false", name)
+	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
+	if err != nil {
+		return domain.FileInfo{}, err
+	}
 
-	file, err := s.service.Files.Create(file).Do()
+	if len(list.Files) > 0 {
+		f := list.Files[0]
+		return domain.FileInfo{
+			Id:       f.Id,
+			Name:     f.Name,
+			MimeType: f.MimeType,
+			ParentId: getParentId(f),
+			Path:     f.Name,
+		}, nil
+	}
+
+	file := &drive.File{Name: name, MimeType: "application/vnd.google-apps.folder"}
+	file, err = s.service.Files.Create(file).Do()
 	if err != nil {
 		return domain.FileInfo{}, err
 	}
@@ -29,36 +45,33 @@ func (s store) CreateDirectory(name string) (domain.FileInfo, error) {
 		Id:       file.Id,
 		Name:     file.Name,
 		MimeType: file.MimeType,
+		ParentId: getParentId(file),
+		Path:     file.Name,
 	}, nil
 }
 
-func (s store) GetFile(info domain.FileInfo) (domain.FileInfo, error) {
-	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(info.Name).Do()
-	if err != nil {
-		return info, err
+func getParentId(f *drive.File) string {
+	if len(f.Parents) > 0 {
+		return f.Parents[0]
 	}
+	return ""
+}
 
-	if len(list.Files) == 0 {
-		return info, fmt.Errorf("file not found")
-	}
-
+func (s store) GetFile(info domain.FileInfo) ([]byte, error) {
 	resp, err := s.service.Files.Get(info.Id).Download()
 	if err != nil {
-		return info, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	info.Id = list.Files[0].Id
-	info.Data, err = io.ReadAll(resp.Body)
-
-	return info, err
+	return io.ReadAll(resp.Body)
 }
 
 func (s store) CreateFile(info domain.FileInfo, data []byte) (domain.FileInfo, error) {
 	file := &drive.File{Name: info.Name, MimeType: info.MimeType}
 
-	if info.Parent != "" {
-		file.Parents = []string{info.Parent}
+	if info.ParentId != "" {
+		file.Parents = []string{info.ParentId}
 	}
 
 	file, err := s.service.Files.Create(file).Do()
@@ -83,7 +96,7 @@ func (s store) UpdateFile(info domain.FileInfo, data []byte) error {
 	return nil
 }
 
-func (s store) ListFiles(parentId string) ([]domain.FileInfo, error) {
+func (s store) ListFilesInDirectory(root, parentId string) ([]domain.FileInfo, error) {
 	q := fmt.Sprintf("'%s' in parents and trashed = false", parentId)
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
 	if err != nil {
@@ -96,6 +109,8 @@ func (s store) ListFiles(parentId string) ([]domain.FileInfo, error) {
 			Id:       f.Id,
 			Name:     f.Name,
 			MimeType: f.MimeType,
+			ParentId: getParentId(f),
+			Path:     root + "/" + f.Name,
 		})
 	}
 

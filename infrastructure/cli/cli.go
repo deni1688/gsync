@@ -32,7 +32,7 @@ func pullCmd(service domain.GsyncServiceContract) *cobra.Command {
 		Use:   "pull",
 		Short: "pull files from remote service to local directory",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := service.Pull(""); err != nil {
+			if err := service.Pull(domain.FileInfo{Name: "Gsync"}); err != nil {
 				log.Println("Failed to pull: ", err.Error())
 			}
 		},

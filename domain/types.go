@@ -16,6 +16,7 @@ type FileInfo struct {
 	Id       string
 	Name     string
 	MimeType string
-	Parent   string
+	ParentId string
+	Path     string
 	Data     []byte
 }

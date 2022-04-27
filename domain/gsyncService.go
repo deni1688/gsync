@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"fmt"
 	"log"
 	"os"
 )
@@ -36,45 +35,40 @@ func NewGsyncService(localGsyncDir string, store SynchronizableStoreContract) Gs
 	return &gsyncService{info.Id, localGsyncDir, store}
 }
 
-func (g gsyncService) Pull(path string) error {
-	info := FileInfo{}
-
-	if path == "" {
-		info.Id = g.remoteGsyncDir
-	} else {
-		info.Name = path
-		inf, err := g.store.GetFile(info)
-		if err != nil {
-			return err
-		}
-		info = inf
+func (g gsyncService) Pull(fi FileInfo) error {
+	if fi.Name == "Gsync" {
+		fi.Id = g.remoteGsyncDir
+		fi.Path = "Gsync"
 	}
 
-	files, err := g.store.ListFiles(info.Id)
+	files, err := g.store.ListFilesInDirectory(fi.Path, fi.Id)
 	if err != nil {
 		return err
 	}
 
 	for _, file := range files {
-		fullPath := fmt.Sprintf("%s/%s", path, file.Name)
-
 		if g.store.IsDir(file) {
-			if path != "Gsync" {
-				err = createDir(fullPath)
-				if err != nil {
-					return err
-				}
+			err = createDir(g.localGsyncDir + "/" + file.Name)
+			if err != nil {
+				return err
 			}
 
-			return g.Pull(info.Id)
+			if err = g.Pull(file); err != nil {
+				return err
+			}
+
+			continue
 		}
 
-		info, err := g.store.GetFile(file)
+		file.Data, err = g.store.GetFile(file)
 		if err != nil {
 			return err
 		}
 
-		return os.WriteFile(fullPath, info.Data, 0700)
+		err = os.WriteFile(g.localGsyncDir+"/"+file.Name, file.Data, 0700)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -158,7 +158,7 @@ func (s store) IsDir(info domain.FileInfo) bool {
 	return info.MimeType == "application/vnd.google-apps.folder"
 }
 
-func New(credentialsPath string) domain.SynchronizableStoreContract {
+func New(credentialsPath string) domain.SynchronizableStore {
 	b, err := os.ReadFile(credentialsPath)
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)

@@ -1,6 +1,6 @@
 package domain
 
-type SynchronizableStoreContract interface {
+type SynchronizableStore interface {
 	GetFile(info FileInfo) ([]byte, error)
 	CreateFile(info FileInfo) (FileInfo, error)
 	CreateDir(info FileInfo) (FileInfo, error)
@@ -9,7 +9,7 @@ type SynchronizableStoreContract interface {
 	IsDir(info FileInfo) bool
 }
 
-type GsyncServiceContract interface {
+type GsyncService interface {
 	Pull(info FileInfo) error
 	Push(info FileInfo) error
 	Sync(info FileInfo) error

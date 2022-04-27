@@ -8,10 +8,10 @@ import (
 type gsyncService struct {
 	remoteGsyncDir string
 	localGsyncDir  string
-	store          SynchronizableStoreContract
+	store          SynchronizableStore
 }
 
-func NewGsyncService(localGsyncDir string, store SynchronizableStoreContract) GsyncServiceContract {
+func NewGsyncService(localGsyncDir string, store SynchronizableStore) GsyncService {
 	if localGsyncDir == "" {
 		localGsyncDir = os.Getenv("HOME") + "/Gsync"
 	}

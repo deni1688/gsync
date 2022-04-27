@@ -33,8 +33,7 @@ func (g gsyncService) Push(fi FileInfo) error {
 				return err
 			}
 
-			err = g.Push(f)
-			if err != nil {
+			if err = g.Push(f); err != nil {
 				return err
 			}
 
@@ -47,9 +46,6 @@ func (g gsyncService) Push(fi FileInfo) error {
 		}
 
 		f, err = g.store.CreateFile(f)
-		if err != nil {
-			return err
-		}
 	}
 
 	// TODO: Remove files from remote that are not in local

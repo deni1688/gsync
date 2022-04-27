@@ -78,10 +78,7 @@ func (g gsyncService) addFilesFromRemote(fi FileInfo, files []FileInfo) error {
 		}
 
 		err = os.WriteFile(fullPath, file.Data, 0700)
-		if err != nil {
-			return err
-		}
 	}
 
-	return nil
+	return err
 }

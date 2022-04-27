@@ -55,13 +55,13 @@ func (g gsyncService) Pull(fi FileInfo) error {
 }
 
 func (g gsyncService) removeFilesFromLocal(fi FileInfo, files []FileInfo) error {
-	localList, err := os.ReadDir(fi.Path)
+	list, err := os.ReadDir(fi.Path)
 	if err != nil {
 		return err
 	}
 
-	for _, localFile := range localList {
-		name := localFile.Name()
+	for _, file := range list {
+		name := file.Name()
 		if fileInfoListContains(files, name) {
 			continue
 		}

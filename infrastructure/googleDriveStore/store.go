@@ -10,9 +10,23 @@ import (
 	"google.golang.org/api/option"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 )
+
+var mimeTypeMap = map[string]string{
+	"application/vnd.google-apps.document":     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	"application/vnd.google-apps.spreadsheet":  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	"application/vnd.google-apps.presentation": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+	"application/vnd.google-apps.drawing":      "image/png",
+	"application/vnd.google-apps.photo":        "image/png",
+	"application/vnd.google-apps.form":         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	"application/vnd.google-apps.file":         "application/octet-stream",
+	"application/vnd.google-apps.folder":       "folder",
+	"application/vnd.google-apps.audio":        "audio/mpeg",
+	"application/vnd.google-apps.video":        "video/mp4",
+}
 
 type store struct {
 	service *drive.Service
@@ -59,13 +73,29 @@ func getParentId(f *drive.File) string {
 }
 
 func (s store) GetFile(info domain.FileInfo) ([]byte, error) {
-	resp, err := s.service.Files.Get(info.Id).Download()
+	var err error
+	resp := new(http.Response)
+	defer resp.Body.Close()
+
+	if !strings.Contains(info.MimeType, "google-apps") {
+		resp, err = s.service.Files.Get(info.Id).Download()
+	} else {
+		resp, err = s.service.Files.Export(info.Id, getMimeType(info.MimeType)).Download()
+	}
+
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
 	return io.ReadAll(resp.Body)
+}
+
+func getMimeType(googleDriveMimeType string) string {
+	if mimeType, ok := mimeTypeMap[googleDriveMimeType]; ok {
+		return mimeType
+	}
+
+	return "unknown"
 }
 
 func (s store) CreateFile(info domain.FileInfo, data []byte) (domain.FileInfo, error) {
@@ -106,7 +136,7 @@ func (s store) ListFiles(root, parentId string) ([]domain.FileInfo, error) {
 
 	var files []domain.FileInfo
 	for _, f := range list.Files {
-		if strings.Contains(f.MimeType, "google-apps") {
+		if getMimeType(f.MimeType) == "unknown" && f.MimeType != "application/vnd.google-apps.folder" {
 			continue
 		}
 

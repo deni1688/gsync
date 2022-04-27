@@ -38,7 +38,7 @@ func NewGsyncService(localGsyncDir string, store SynchronizableStoreContract) Gs
 
 func (g gsyncService) Pull(path string) error {
 	if path == "" {
-		path = g.localGsyncDir
+		path = "Gsync"
 	}
 
 	files, err := g.store.ListFiles(path)
@@ -50,9 +50,11 @@ func (g gsyncService) Pull(path string) error {
 		fullPath := fmt.Sprintf("%s/%s", path, file.Name)
 
 		if g.store.IsDir(file) {
-			err = createDir(fullPath)
-			if err != nil {
-				return err
+			if path != "Gsync" {
+				err = createDir(fullPath)
+				if err != nil {
+					return err
+				}
 			}
 
 			return g.Pull(fullPath)

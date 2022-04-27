@@ -3,6 +3,7 @@ package domain
 import (
 	"log"
 	"os"
+	"strings"
 )
 
 type gsyncService struct {
@@ -38,7 +39,7 @@ func NewGsyncService(localGsyncDir string, store SynchronizableStoreContract) Gs
 func (g gsyncService) Pull(fi FileInfo) error {
 	if fi.Name == "Gsync" {
 		fi.Id = g.remoteGsyncDir
-		fi.Path = "Gsync"
+		fi.Path = g.localGsyncDir
 	}
 
 	files, err := g.store.ListFilesInDirectory(fi.Path, fi.Id)
@@ -47,11 +48,15 @@ func (g gsyncService) Pull(fi FileInfo) error {
 	}
 
 	for _, file := range files {
+		fullPath := getFullPath(fi.Path, file.Name)
+
 		if g.store.IsDir(file) {
-			err = createDir(g.localGsyncDir + "/" + file.Name)
+			err = createDir(fullPath)
 			if err != nil {
 				return err
 			}
+
+			file.Path = fullPath
 
 			if err = g.Pull(file); err != nil {
 				return err
@@ -65,13 +70,44 @@ func (g gsyncService) Pull(fi FileInfo) error {
 			return err
 		}
 
-		err = os.WriteFile(g.localGsyncDir+"/"+file.Name, file.Data, 0700)
+		err = os.WriteFile(fullPath, file.Data, 0700)
+		if err != nil {
+			return err
+		}
+	}
+
+	localList, err := os.ReadDir(fi.Path)
+	if err != nil {
+		return err
+	}
+
+	for _, localFile := range localList {
+		name := localFile.Name()
+		if fileInfoListContains(files, name) {
+			continue
+		}
+
+		err = os.Remove(getFullPath(fi.Path, name))
 		if err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func fileInfoListContains(list []FileInfo, name string) bool {
+	for _, file := range list {
+		if file.Name == name {
+			return true
+		}
+	}
+
+	return false
+}
+
+func getFullPath(items ...string) string {
+	return strings.Join(items, "/")
 }
 
 func createDir(path string) error {

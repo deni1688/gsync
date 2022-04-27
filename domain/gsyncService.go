@@ -47,6 +47,35 @@ func (g gsyncService) Pull(fi FileInfo) error {
 		return err
 	}
 
+	if err = g.addFilesFromRemote(fi, files); err != nil {
+		return err
+	}
+
+	return g.removeFilesFromLocal(fi, files)
+}
+
+func (g gsyncService) removeFilesFromLocal(fi FileInfo, files []FileInfo) error {
+	localList, err := os.ReadDir(fi.Path)
+	if err != nil {
+		return err
+	}
+
+	for _, localFile := range localList {
+		name := localFile.Name()
+		if fileInfoListContains(files, name) {
+			continue
+		}
+		if err = os.Remove(getFullPath(fi.Path, name)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (g gsyncService) addFilesFromRemote(fi FileInfo, files []FileInfo) error {
+	var err error
+
 	for _, file := range files {
 		fullPath := getFullPath(fi.Path, file.Name)
 
@@ -71,23 +100,6 @@ func (g gsyncService) Pull(fi FileInfo) error {
 		}
 
 		err = os.WriteFile(fullPath, file.Data, 0700)
-		if err != nil {
-			return err
-		}
-	}
-
-	localList, err := os.ReadDir(fi.Path)
-	if err != nil {
-		return err
-	}
-
-	for _, localFile := range localList {
-		name := localFile.Name()
-		if fileInfoListContains(files, name) {
-			continue
-		}
-
-		err = os.Remove(getFullPath(fi.Path, name))
 		if err != nil {
 			return err
 		}
@@ -119,12 +131,16 @@ func createDir(path string) error {
 	return err
 }
 
-func (g gsyncService) Push(option ...SyncOption) error {
+func (g gsyncService) Push(info FileInfo) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (g gsyncService) Sync(option ...SyncOption) error {
-	//TODO implement me
-	panic("implement me")
+func (g gsyncService) Sync(info FileInfo) error {
+	var err error
+
+	err = g.Push(info)
+	err = g.Pull(info)
+
+	return err
 }

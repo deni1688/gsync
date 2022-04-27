@@ -32,7 +32,7 @@ func pullCmd(service domain.GsyncServiceContract) *cobra.Command {
 		Use:   "pull",
 		Short: "pull files from remote service to local directory",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := service.Pull(domain.FileInfo{Name: "Gsync"}); err != nil {
+			if err := service.Pull(); err != nil {
 				log.Println("Failed to pull: ", err.Error())
 			}
 		},
@@ -44,7 +44,7 @@ func pushCmd(service domain.GsyncServiceContract) *cobra.Command {
 		Use:   "push",
 		Short: "push files from local directory to remote service",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := service.Push(); err != nil {
+			if err := service.Push(domain.FileInfo{Name: "Gsync"}); err != nil {
 				log.Println("Failed to push: ", err.Error())
 			}
 		},
@@ -56,7 +56,7 @@ func syncCmd(service domain.GsyncServiceContract) *cobra.Command {
 		Use:   "sync",
 		Short: "sync files between a remote service and local directory",
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := service.Sync(); err != nil {
+			if err := service.Sync(domain.FileInfo{Name: "Gsync"}); err != nil {
 				log.Println("Failed to sync: ", err.Error())
 			}
 		},

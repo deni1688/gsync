@@ -11,6 +11,6 @@ type SynchronizableStoreContract interface {
 
 type GsyncServiceContract interface {
 	Pull(info FileInfo) error
-	Push(option ...SyncOption) error
-	Sync(option ...SyncOption) error
+	Push(info FileInfo) error
+	Sync(info FileInfo) error
 }

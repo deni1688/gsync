@@ -1,12 +1,11 @@
-package synchronizer
+package syncer
 
 import (
-	"deni1688/gsync/domain"
 	"log"
 	"os"
 )
 
-func (g syncService) Push(sf domain.SyncFile) error {
+func (g syncService) Push(sf SyncFile) error {
 	if sf.Name == "Gsync" {
 		sf.Id = g.remoteGsyncDir
 		sf.Path = g.localGsyncDir
@@ -18,11 +17,11 @@ func (g syncService) Push(sf domain.SyncFile) error {
 	}
 
 	for _, file := range list {
-		fullPath := domain.GetFullPath(sf.Path, file.Name())
+		fullPath := GetFullPath(sf.Path, file.Name())
 
 		log.Printf("Pushing %s", fullPath)
 
-		f := domain.SyncFile{
+		f := SyncFile{
 			Name:     file.Name(),
 			Path:     fullPath,
 			ParentId: sf.Id,

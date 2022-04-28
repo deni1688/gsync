@@ -1,4 +1,4 @@
-package syncService
+package synchronizer
 
 import (
 	"deni1688/gsync/domain"
@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-type gsyncService struct {
+type syncService struct {
 	remoteGsyncDir string
 	localGsyncDir  string
 	drive          domain.SynchronizableDrive
@@ -32,10 +32,10 @@ func New(localGsyncDir string, drive domain.SynchronizableDrive) domain.GsyncSer
 		log.Fatalf("Error creating remote Gsync directory: %v", err)
 	}
 
-	return &gsyncService{dirSyncFile.Id, localGsyncDir, drive}
+	return &syncService{dirSyncFile.Id, localGsyncDir, drive}
 }
 
-func (g gsyncService) Sync(syncFile domain.SyncFile) error {
+func (g syncService) Sync(syncFile domain.SyncFile) error {
 	var err error
 
 	err = g.Push(syncFile)

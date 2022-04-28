@@ -1,4 +1,4 @@
-package syncService
+package synchronizer
 
 import (
 	"deni1688/gsync/domain"
@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func (g gsyncService) Push(sf domain.SyncFile) error {
+func (g syncService) Push(sf domain.SyncFile) error {
 	if sf.Name == "Gsync" {
 		sf.Id = g.remoteGsyncDir
 		sf.Path = g.localGsyncDir

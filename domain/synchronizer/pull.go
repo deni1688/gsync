@@ -1,4 +1,4 @@
-package syncService
+package synchronizer
 
 import (
 	"deni1688/gsync/domain"
@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func (g gsyncService) Pull(sf domain.SyncFile) error {
+func (g syncService) Pull(sf domain.SyncFile) error {
 	if sf.Name == "Gsync" {
 		sf.Id = g.remoteGsyncDir
 		sf.Path = g.localGsyncDir
@@ -24,7 +24,7 @@ func (g gsyncService) Pull(sf domain.SyncFile) error {
 	return g.removeFilesFromLocal(sf, files)
 }
 
-func (g gsyncService) removeFilesFromLocal(sf domain.SyncFile, files []domain.SyncFile) error {
+func (g syncService) removeFilesFromLocal(sf domain.SyncFile, files []domain.SyncFile) error {
 	list, err := os.ReadDir(sf.Path)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (g gsyncService) removeFilesFromLocal(sf domain.SyncFile, files []domain.Sy
 	return err
 }
 
-func (g gsyncService) addFilesFromRemote(sf domain.SyncFile, files []domain.SyncFile) error {
+func (g syncService) addFilesFromRemote(sf domain.SyncFile, files []domain.SyncFile) error {
 	var err error
 
 	for _, file := range files {

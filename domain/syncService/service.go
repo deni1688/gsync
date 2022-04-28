@@ -9,10 +9,10 @@ import (
 type gsyncService struct {
 	remoteGsyncDir string
 	localGsyncDir  string
-	store          domain.SynchronizableDrive
+	drive          domain.SynchronizableDrive
 }
 
-func New(localGsyncDir string, store domain.SynchronizableDrive) domain.GsyncService {
+func New(localGsyncDir string, drive domain.SynchronizableDrive) domain.GsyncService {
 	if localGsyncDir == "" {
 		localGsyncDir = os.Getenv("HOME") + "/Gsync"
 	}
@@ -27,12 +27,12 @@ func New(localGsyncDir string, store domain.SynchronizableDrive) domain.GsyncSer
 		Path: localGsyncDir,
 	}
 
-	dirSyncFile, err = store.CreateDir(dirSyncFile)
+	dirSyncFile, err = drive.CreateDir(dirSyncFile)
 	if err != nil {
 		log.Fatalf("Error creating remote Gsync directory: %v", err)
 	}
 
-	return &gsyncService{dirSyncFile.Id, localGsyncDir, store}
+	return &gsyncService{dirSyncFile.Id, localGsyncDir, drive}
 }
 
 func (g gsyncService) Sync(syncFile domain.SyncFile) error {

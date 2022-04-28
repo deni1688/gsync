@@ -29,7 +29,7 @@ func (g gsyncService) Push(sf domain.SyncFile) error {
 		}
 
 		if file.IsDir() {
-			f, err = g.store.CreateDir(f)
+			f, err = g.drive.CreateDir(f)
 			if err != nil {
 				return err
 			}
@@ -46,7 +46,7 @@ func (g gsyncService) Push(sf domain.SyncFile) error {
 			return err
 		}
 
-		f, err = g.store.CreateFile(f)
+		f, err = g.drive.CreateFile(f)
 	}
 
 	// TODO: Remove files from remote that are not in local

@@ -26,11 +26,11 @@ var mimeTypeMap = map[string]string{
 	"application/vnd.google-apps.presentation": "application/vnd.oasis.opendocument.presentation",
 }
 
-type store struct {
+type googleDriveService struct {
 	service *drive.Service
 }
 
-func (s store) CreateDir(dirSyncFile domain.SyncFile) (domain.SyncFile, error) {
+func (s googleDriveService) CreateDir(dirSyncFile domain.SyncFile) (domain.SyncFile, error) {
 	q := fmt.Sprintf("name = '%s' and trashed = false", dirSyncFile.Name)
 
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
@@ -76,7 +76,7 @@ func getParentId(f *drive.File) string {
 	return ""
 }
 
-func (s store) GetFile(syncFile domain.SyncFile) ([]byte, error) {
+func (s googleDriveService) GetFile(syncFile domain.SyncFile) ([]byte, error) {
 	var err error
 	resp := new(http.Response)
 
@@ -102,7 +102,7 @@ func getExportMimeType(driveMimeType string) string {
 	return "application/octet-stream"
 }
 
-func (s store) CreateFile(syncFile domain.SyncFile) (domain.SyncFile, error) {
+func (s googleDriveService) CreateFile(syncFile domain.SyncFile) (domain.SyncFile, error) {
 	file := &drive.File{Name: syncFile.Name, MimeType: syncFile.MimeType}
 
 	if syncFile.ParentId != "" {
@@ -119,7 +119,7 @@ func (s store) CreateFile(syncFile domain.SyncFile) (domain.SyncFile, error) {
 	return syncFile, nil
 }
 
-func (s store) UpdateFile(syncFile domain.SyncFile) error {
+func (s googleDriveService) UpdateFile(syncFile domain.SyncFile) error {
 	file := &drive.File{Id: syncFile.Id, Name: syncFile.Name, MimeType: syncFile.MimeType}
 
 	file, err := s.service.Files.Update(file.Id, &drive.File{Name: file.Name, MimeType: file.MimeType}).Media(bytes.NewReader(syncFile.Data)).Do()
@@ -131,7 +131,7 @@ func (s store) UpdateFile(syncFile domain.SyncFile) error {
 	return nil
 }
 
-func (s store) ListFiles(parentSyncFile domain.SyncFile) ([]domain.SyncFile, error) {
+func (s googleDriveService) ListFiles(parentSyncFile domain.SyncFile) ([]domain.SyncFile, error) {
 	q := fmt.Sprintf("'%s' in parents and trashed = false", parentSyncFile.Id)
 
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
@@ -154,7 +154,7 @@ func (s store) ListFiles(parentSyncFile domain.SyncFile) ([]domain.SyncFile, err
 	return files, nil
 }
 
-func (s store) IsDir(syncFile domain.SyncFile) bool {
+func (s googleDriveService) IsDir(syncFile domain.SyncFile) bool {
 	return syncFile.MimeType == "application/vnd.google-apps.folder"
 }
 
@@ -176,5 +176,5 @@ func New(credentialsPath string) domain.SynchronizableDrive {
 		log.Fatalf("Unable to retrieve Drive client: %v", err)
 	}
 
-	return &store{service}
+	return &googleDriveService{service}
 }

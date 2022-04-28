@@ -12,7 +12,7 @@ func (g gsyncService) Pull(sf domain.SyncFile) error {
 		sf.Path = g.localGsyncDir
 	}
 
-	files, err := g.store.ListFiles(sf)
+	files, err := g.drive.ListFiles(sf)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (g gsyncService) addFilesFromRemote(sf domain.SyncFile, files []domain.Sync
 		fullPath := domain.GetFullPath(sf.Path, file.Name)
 		log.Printf("Pulling %s", fullPath)
 
-		if g.store.IsDir(file) {
+		if g.drive.IsDir(file) {
 			err = domain.CreateDir(fullPath)
 			if err != nil {
 				return err
@@ -73,7 +73,7 @@ func (g gsyncService) addFilesFromRemote(sf domain.SyncFile, files []domain.Sync
 			continue
 		}
 
-		file.Data, err = g.store.GetFile(file)
+		file.Data, err = g.drive.GetFile(file)
 		if err != nil {
 			return err
 		}

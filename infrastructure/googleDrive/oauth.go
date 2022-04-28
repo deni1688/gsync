@@ -38,7 +38,7 @@ func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 	code := <-ch
 	log.Println("Received auth code!")
 
-	stopTemporaryServer(srv)
+	stopTempAuthServer(srv)
 
 	if err := cmd.Process.Kill(); err != nil {
 		log.Printf("Unable to kill browser: %v", err)
@@ -52,7 +52,7 @@ func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 	return tok
 }
 
-func stopTemporaryServer(srv *http.Server) {
+func stopTempAuthServer(srv *http.Server) {
 	if err := srv.Shutdown(context.TODO()); err != nil {
 		log.Fatalf("Unable to shutdown server: %v", err)
 	}

@@ -1,4 +1,4 @@
-package googleDriveStore
+package googleDrive
 
 import (
 	"encoding/json"

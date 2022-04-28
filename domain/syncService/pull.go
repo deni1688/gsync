@@ -1,30 +1,31 @@
-package domain
+package syncService
 
 import (
+	"deni1688/gsync/domain"
 	"log"
 	"os"
 )
 
-func (g gsyncService) Pull(fi FileInfo) error {
-	if fi.Name == "Gsync" {
-		fi.Id = g.remoteGsyncDir
-		fi.Path = g.localGsyncDir
+func (g gsyncService) Pull(sf domain.SyncFile) error {
+	if sf.Name == "Gsync" {
+		sf.Id = g.remoteGsyncDir
+		sf.Path = g.localGsyncDir
 	}
 
-	files, err := g.store.ListFiles(fi)
+	files, err := g.store.ListFiles(sf)
 	if err != nil {
 		return err
 	}
 
-	if err = g.addFilesFromRemote(fi, files); err != nil {
+	if err = g.addFilesFromRemote(sf, files); err != nil {
 		return err
 	}
 
-	return g.removeFilesFromLocal(fi, files)
+	return g.removeFilesFromLocal(sf, files)
 }
 
-func (g gsyncService) removeFilesFromLocal(fi FileInfo, files []FileInfo) error {
-	list, err := os.ReadDir(fi.Path)
+func (g gsyncService) removeFilesFromLocal(sf domain.SyncFile, files []domain.SyncFile) error {
+	list, err := os.ReadDir(sf.Path)
 	if err != nil {
 		return err
 	}
@@ -32,11 +33,11 @@ func (g gsyncService) removeFilesFromLocal(fi FileInfo, files []FileInfo) error 
 	for _, file := range list {
 		name := file.Name()
 
-		if fileInfoListContains(files, name) {
+		if domain.SyncFileListContains(files, name) {
 			continue
 		}
 
-		fullPath := getFullPath(fi.Path, name)
+		fullPath := domain.GetFullPath(sf.Path, name)
 
 		log.Printf("Removing %s", fullPath)
 
@@ -50,15 +51,15 @@ func (g gsyncService) removeFilesFromLocal(fi FileInfo, files []FileInfo) error 
 	return err
 }
 
-func (g gsyncService) addFilesFromRemote(fi FileInfo, files []FileInfo) error {
+func (g gsyncService) addFilesFromRemote(sf domain.SyncFile, files []domain.SyncFile) error {
 	var err error
 
 	for _, file := range files {
-		fullPath := getFullPath(fi.Path, file.Name)
+		fullPath := domain.GetFullPath(sf.Path, file.Name)
 		log.Printf("Pulling %s", fullPath)
 
 		if g.store.IsDir(file) {
-			err = createDir(fullPath)
+			err = domain.CreateDir(fullPath)
 			if err != nil {
 				return err
 			}

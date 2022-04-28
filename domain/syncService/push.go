@@ -1,30 +1,31 @@
-package domain
+package syncService
 
 import (
+	"deni1688/gsync/domain"
 	"log"
 	"os"
 )
 
-func (g gsyncService) Push(fi FileInfo) error {
-	if fi.Name == "Gsync" {
-		fi.Id = g.remoteGsyncDir
-		fi.Path = g.localGsyncDir
+func (g gsyncService) Push(sf domain.SyncFile) error {
+	if sf.Name == "Gsync" {
+		sf.Id = g.remoteGsyncDir
+		sf.Path = g.localGsyncDir
 	}
 
-	list, err := os.ReadDir(fi.Path)
+	list, err := os.ReadDir(sf.Path)
 	if err != nil {
 		return err
 	}
 
 	for _, file := range list {
-		fullPath := getFullPath(fi.Path, file.Name())
+		fullPath := domain.GetFullPath(sf.Path, file.Name())
 
 		log.Printf("Pushing %s", fullPath)
 
-		f := FileInfo{
+		f := domain.SyncFile{
 			Name:     file.Name(),
 			Path:     fullPath,
-			ParentId: fi.Id,
+			ParentId: sf.Id,
 		}
 
 		if file.IsDir() {

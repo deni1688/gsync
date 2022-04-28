@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func fileInfoListContains(list []FileInfo, name string) bool {
+func SyncFileListContains(list []SyncFile, name string) bool {
 	for _, file := range list {
 		if file.Name == name {
 			return true
@@ -15,11 +15,11 @@ func fileInfoListContains(list []FileInfo, name string) bool {
 	return false
 }
 
-func getFullPath(items ...string) string {
+func GetFullPath(items ...string) string {
 	return strings.Join(items, "/")
 }
 
-func createDir(path string) error {
+func CreateDir(path string) error {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		err = os.Mkdir(path, 0700)

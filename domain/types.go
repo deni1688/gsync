@@ -1,6 +1,6 @@
 package domain
 
-type FileInfo struct {
+type SyncFile struct {
 	Id       string
 	Name     string
 	MimeType string

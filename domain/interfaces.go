@@ -1,16 +1,16 @@
 package domain
 
-type SynchronizableStore interface {
-	GetFile(info FileInfo) ([]byte, error)
-	CreateFile(info FileInfo) (FileInfo, error)
-	CreateDir(info FileInfo) (FileInfo, error)
-	UpdateFile(info FileInfo) error
-	ListFiles(parentFileInfo FileInfo) ([]FileInfo, error)
-	IsDir(info FileInfo) bool
+type SynchronizableDrive interface {
+	GetFile(syncFile SyncFile) ([]byte, error)
+	CreateFile(syncFile SyncFile) (SyncFile, error)
+	CreateDir(syncFile SyncFile) (SyncFile, error)
+	UpdateFile(syncFile SyncFile) error
+	ListFiles(parentSyncFile SyncFile) ([]SyncFile, error)
+	IsDir(syncFile SyncFile) bool
 }
 
 type GsyncService interface {
-	Pull(info FileInfo) error
-	Push(info FileInfo) error
-	Sync(info FileInfo) error
+	Pull(syncFile SyncFile) error
+	Push(syncFile SyncFile) error
+	Sync(syncFile SyncFile) error
 }

@@ -1,4 +1,4 @@
-package googleDriveStore
+package googleDrive
 
 import (
 	"bytes"
@@ -30,42 +30,42 @@ type store struct {
 	service *drive.Service
 }
 
-func (s store) CreateDir(dirFileInfo domain.FileInfo) (domain.FileInfo, error) {
-	q := fmt.Sprintf("name = '%s' and trashed = false", dirFileInfo.Name)
+func (s store) CreateDir(dirSyncFile domain.SyncFile) (domain.SyncFile, error) {
+	q := fmt.Sprintf("name = '%s' and trashed = false", dirSyncFile.Name)
 
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
 	if err != nil {
-		return domain.FileInfo{}, err
+		return domain.SyncFile{}, err
 	}
 
 	if len(list.Files) > 0 {
 		f := list.Files[0]
-		return domain.FileInfo{
+		return domain.SyncFile{
 			Id:       f.Id,
 			Name:     f.Name,
 			MimeType: f.MimeType,
 			ParentId: getParentId(f),
-			Path:     dirFileInfo.Path,
+			Path:     dirSyncFile.Path,
 		}, nil
 	}
 
 	file := &drive.File{
-		Name:     dirFileInfo.Name,
+		Name:     dirSyncFile.Name,
 		MimeType: "application/vnd.google-apps.folder",
-		Parents:  []string{dirFileInfo.ParentId},
+		Parents:  []string{dirSyncFile.ParentId},
 	}
 
 	file, err = s.service.Files.Create(file).Do()
 	if err != nil {
-		return domain.FileInfo{}, err
+		return domain.SyncFile{}, err
 	}
 
-	return domain.FileInfo{
+	return domain.SyncFile{
 		Id:       file.Id,
 		Name:     file.Name,
 		MimeType: file.MimeType,
 		ParentId: getParentId(file),
-		Path:     dirFileInfo.Path,
+		Path:     dirSyncFile.Path,
 	}, nil
 }
 
@@ -76,14 +76,14 @@ func getParentId(f *drive.File) string {
 	return ""
 }
 
-func (s store) GetFile(info domain.FileInfo) ([]byte, error) {
+func (s store) GetFile(syncFile domain.SyncFile) ([]byte, error) {
 	var err error
 	resp := new(http.Response)
 
-	if strings.Contains(info.MimeType, "google-apps") {
-		resp, err = s.service.Files.Export(info.Id, getExportMimeType(info.MimeType)).Download()
+	if strings.Contains(syncFile.MimeType, "google-apps") {
+		resp, err = s.service.Files.Export(syncFile.Id, getExportMimeType(syncFile.MimeType)).Download()
 	} else {
-		resp, err = s.service.Files.Get(info.Id).Download()
+		resp, err = s.service.Files.Get(syncFile.Id).Download()
 	}
 
 	defer resp.Body.Close()
@@ -102,27 +102,27 @@ func getExportMimeType(driveMimeType string) string {
 	return "application/octet-stream"
 }
 
-func (s store) CreateFile(info domain.FileInfo) (domain.FileInfo, error) {
-	file := &drive.File{Name: info.Name, MimeType: info.MimeType}
+func (s store) CreateFile(syncFile domain.SyncFile) (domain.SyncFile, error) {
+	file := &drive.File{Name: syncFile.Name, MimeType: syncFile.MimeType}
 
-	if info.ParentId != "" {
-		file.Parents = []string{info.ParentId}
+	if syncFile.ParentId != "" {
+		file.Parents = []string{syncFile.ParentId}
 	}
 
-	file, err := s.service.Files.Create(file).Media(bytes.NewReader(info.Data)).Do()
+	file, err := s.service.Files.Create(file).Media(bytes.NewReader(syncFile.Data)).Do()
 	if err != nil {
-		return domain.FileInfo{}, err
+		return domain.SyncFile{}, err
 	}
 
-	info.Id = file.Id
+	syncFile.Id = file.Id
 
-	return info, nil
+	return syncFile, nil
 }
 
-func (s store) UpdateFile(info domain.FileInfo) error {
-	file := &drive.File{Id: info.Id, Name: info.Name, MimeType: info.MimeType}
+func (s store) UpdateFile(syncFile domain.SyncFile) error {
+	file := &drive.File{Id: syncFile.Id, Name: syncFile.Name, MimeType: syncFile.MimeType}
 
-	file, err := s.service.Files.Update(file.Id, &drive.File{Name: file.Name, MimeType: file.MimeType}).Media(bytes.NewReader(info.Data)).Do()
+	file, err := s.service.Files.Update(file.Id, &drive.File{Name: file.Name, MimeType: file.MimeType}).Media(bytes.NewReader(syncFile.Data)).Do()
 	if err != nil {
 		log.Printf("Could update file: %v", err)
 		return err
@@ -131,34 +131,34 @@ func (s store) UpdateFile(info domain.FileInfo) error {
 	return nil
 }
 
-func (s store) ListFiles(parentFileInfo domain.FileInfo) ([]domain.FileInfo, error) {
-	q := fmt.Sprintf("'%s' in parents and trashed = false", parentFileInfo.Id)
+func (s store) ListFiles(parentSyncFile domain.SyncFile) ([]domain.SyncFile, error) {
+	q := fmt.Sprintf("'%s' in parents and trashed = false", parentSyncFile.Id)
 
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
 	if err != nil {
 		return nil, err
 	}
 
-	var files []domain.FileInfo
+	var files []domain.SyncFile
 
 	for _, f := range list.Files {
-		files = append(files, domain.FileInfo{
+		files = append(files, domain.SyncFile{
 			Id:       f.Id,
 			Name:     f.Name,
 			MimeType: f.MimeType,
 			ParentId: getParentId(f),
-			Path:     parentFileInfo.Path + "/" + f.Name,
+			Path:     parentSyncFile.Path + "/" + f.Name,
 		})
 	}
 
 	return files, nil
 }
 
-func (s store) IsDir(info domain.FileInfo) bool {
-	return info.MimeType == "application/vnd.google-apps.folder"
+func (s store) IsDir(syncFile domain.SyncFile) bool {
+	return syncFile.MimeType == "application/vnd.google-apps.folder"
 }
 
-func New(credentialsPath string) domain.SynchronizableStore {
+func New(credentialsPath string) domain.SynchronizableDrive {
 	b, err := os.ReadFile(credentialsPath)
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)

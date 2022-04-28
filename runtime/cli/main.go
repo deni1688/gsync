@@ -1,22 +1,22 @@
 package main
 
 import (
-	"deni1688/gsync/domain"
-	"deni1688/gsync/infrastructure/cli"
-	"deni1688/gsync/infrastructure/googleDriveStore"
+	"deni1688/gsync/domain/syncService"
+	"deni1688/gsync/infrastructure/cobraCliRuntime"
+	"deni1688/gsync/infrastructure/googleDrive"
 	"log"
 	"os"
 )
 
 func main() {
-	credentialsPath := os.Getenv("GOOGLE_OAUTH_CREDENTIALS")
-	localGsyncDir := os.Getenv("LOCAL_GSYNC_DIR")
+	creds := os.Getenv("GOOGLE_OAUTH_CREDENTIALS")
+	localDir := os.Getenv("LOCAL_GSYNC_DIR")
 
-	googleDriverStore := googleDriveStore.New(credentialsPath)
-	gsyncService := domain.NewGsyncService(localGsyncDir, googleDriverStore)
-	runtime := cli.New(gsyncService)
+	gd := googleDrive.New(creds)
+	ss := syncService.New(localDir, gd)
+	rt := cobraCliRuntime.New(ss)
 
-	if err := runtime.Execute(); err != nil {
+	if err := rt.Execute(); err != nil {
 		log.Fatalf("Error starting the CLI runtime: %v", err)
 	}
 }

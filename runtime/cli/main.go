@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	creds := os.Getenv("GOOGLE_OAUTH_CREDENTIALS")
+	creds := os.Getenv("GOOGLE_OAUTH_CREDENTIALS_FILE")
 	localDir := os.Getenv("LOCAL_GSYNC_DIR")
 
 	gd := googleDrive.New(creds)

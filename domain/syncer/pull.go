@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 )
 
 func (g syncService) Pull(sf SyncFile) error {
@@ -56,15 +57,18 @@ func (g syncService) removeFilesFromLocal(sf SyncFile, files []SyncFile) error {
 
 func (g syncService) downloadFiles(sf SyncFile, files []SyncFile) error {
 	var wg sync.WaitGroup
-	errCh := make(chan error)
+	errCh := make(chan error, 1)
 
 	for _, file := range files {
 		fullPath := GetFullPath(sf.Path, file.Name)
-		log.Printf("Pulling %s", fullPath)
 
 		wg.Add(1)
-		go func(file SyncFile) {
+		go func(wg *sync.WaitGroup, file SyncFile) {
+			defer wg.Done()
+
 			if g.drive.IsDir(file) {
+				log.Printf("Pulling dir %s", fullPath)
+
 				if err := CreateDir(fullPath); err != nil {
 					errCh <- err
 				}
@@ -75,6 +79,7 @@ func (g syncService) downloadFiles(sf SyncFile, files []SyncFile) error {
 					errCh <- err
 				}
 			} else {
+				log.Printf("Pulling file %s", fullPath)
 				data, err := g.drive.GetFile(file)
 				if err != nil {
 					errCh <- err
@@ -84,8 +89,9 @@ func (g syncService) downloadFiles(sf SyncFile, files []SyncFile) error {
 					errCh <- err
 				}
 			}
-			wg.Done()
-		}(file)
+		}(&wg, file)
+
+		time.Sleep(time.Millisecond * 30) // throttle api calls
 	}
 	wg.Wait()
 

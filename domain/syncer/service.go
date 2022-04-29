@@ -33,12 +33,3 @@ func NewService(localGsyncDir string, drive SynchronizableDrive) GsyncService {
 
 	return &syncService{dirSyncFile.Id, localGsyncDir, drive}
 }
-
-func (g syncService) Sync(syncFile SyncFile) error {
-	var err error
-
-	err = g.Push(syncFile)
-	err = g.Pull(syncFile)
-
-	return err
-}

@@ -20,6 +20,7 @@ func (g syncService) Pull(sf SyncFile) error {
 }
 
 func (g syncService) removeFilesFromLocal(sf SyncFile, files []SyncFile) error {
+	errCh := make(chan error)
 	list, err := os.ReadDir(sf.Path)
 	if err != nil {
 		return err
@@ -27,23 +28,28 @@ func (g syncService) removeFilesFromLocal(sf SyncFile, files []SyncFile) error {
 
 	for _, file := range list {
 		name := file.Name()
+		fullPath := GetFullPath(sf.Path, name)
 
 		if SyncFileListContains(files, name) {
 			continue
 		}
 
-		fullPath := GetFullPath(sf.Path, name)
+		var removeErr error
 
-		log.Printf("Removing %s", fullPath)
+		go func(errCh chan error, file os.DirEntry) {
+			log.Printf("Removing %s", fullPath)
 
-		if file.IsDir() {
-			err = os.RemoveAll(fullPath)
-		} else {
-			err = os.Remove(fullPath)
-		}
+			if file.IsDir() {
+				removeErr = os.RemoveAll(fullPath)
+			} else {
+				removeErr = os.Remove(fullPath)
+			}
+
+			errCh <- removeErr
+		}(errCh, file)
 	}
 
-	return err
+	return <-errCh
 }
 
 func (g syncService) addFilesFromRemote(sf SyncFile, files []SyncFile) error {

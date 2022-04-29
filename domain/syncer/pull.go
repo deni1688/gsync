@@ -47,37 +47,37 @@ func (g syncService) removeFilesFromLocal(sf SyncFile, files []SyncFile) error {
 }
 
 func (g syncService) addFilesFromRemote(sf SyncFile, files []SyncFile) error {
-	errChan := make(chan error)
+	errCh := make(chan error)
 
 	for _, file := range files {
-		go func(errChan chan error, file SyncFile) {
+		go func(errCh chan error, file SyncFile) {
 			fullPath := GetFullPath(sf.Path, file.Name)
 			log.Printf("Pulling %s", fullPath)
 
 			if g.drive.IsDir(file) {
 				err := CreateDir(fullPath)
 				if err != nil {
-					errChan <- err
+					errCh <- err
 				}
 				file.Path = fullPath
 				err = g.Pull(file)
 				if err != nil {
-					errChan <- err
+					errCh <- err
 				}
 			} else {
 				data, err := g.drive.GetFile(file)
 				if err != nil {
-					errChan <- err
+					errCh <- err
 				}
 
 				file.Data = data
 
 				if err = os.WriteFile(fullPath, file.Data, 0700); err != nil {
-					errChan <- err
+					errCh <- err
 				}
 			}
-		}(errChan, file)
+		}(errCh, file)
 	}
 
-	return <-errChan
+	return <-errCh
 }

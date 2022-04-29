@@ -3,7 +3,7 @@ package googledrive
 import (
 	"bytes"
 	"context"
-	"deni1688/gsync/domain/syncer"
+	"deni1688/gsync/domain"
 	"fmt"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
@@ -30,17 +30,17 @@ type googleDriveService struct {
 	service *drive.Service
 }
 
-func (s googleDriveService) CreateDir(dirSyncFile syncer.SyncFile) (syncer.SyncFile, error) {
+func (s googleDriveService) CreateDir(dirSyncFile domain.SyncFile) (domain.SyncFile, error) {
 	q := fmt.Sprintf("name = '%s' and trashed = false", dirSyncFile.Name)
 
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
 	if err != nil {
-		return syncer.SyncFile{}, err
+		return domain.SyncFile{}, err
 	}
 
 	if len(list.Files) > 0 {
 		f := list.Files[0]
-		return syncer.SyncFile{
+		return domain.SyncFile{
 			Id:       f.Id,
 			Name:     f.Name,
 			MimeType: f.MimeType,
@@ -57,10 +57,10 @@ func (s googleDriveService) CreateDir(dirSyncFile syncer.SyncFile) (syncer.SyncF
 
 	file, err = s.service.Files.Create(file).Do()
 	if err != nil {
-		return syncer.SyncFile{}, err
+		return domain.SyncFile{}, err
 	}
 
-	return syncer.SyncFile{
+	return domain.SyncFile{
 		Id:       file.Id,
 		Name:     file.Name,
 		MimeType: file.MimeType,
@@ -76,7 +76,7 @@ func getParentId(f *drive.File) string {
 	return ""
 }
 
-func (s googleDriveService) GetFile(syncFile syncer.SyncFile) ([]byte, error) {
+func (s googleDriveService) GetFile(syncFile domain.SyncFile) ([]byte, error) {
 	var err error
 	resp := new(http.Response)
 
@@ -107,7 +107,7 @@ func getExportMimeType(driveMimeType string) string {
 	return "application/octet-stream"
 }
 
-func (s googleDriveService) CreateFile(syncFile syncer.SyncFile) (syncer.SyncFile, error) {
+func (s googleDriveService) CreateFile(syncFile domain.SyncFile) (domain.SyncFile, error) {
 	file := &drive.File{Name: syncFile.Name, MimeType: syncFile.MimeType}
 
 	if syncFile.ParentId != "" {
@@ -116,7 +116,7 @@ func (s googleDriveService) CreateFile(syncFile syncer.SyncFile) (syncer.SyncFil
 
 	file, err := s.service.Files.Create(file).Media(bytes.NewReader(syncFile.Data)).Do()
 	if err != nil {
-		return syncer.SyncFile{}, err
+		return domain.SyncFile{}, err
 	}
 
 	syncFile.Id = file.Id
@@ -124,7 +124,7 @@ func (s googleDriveService) CreateFile(syncFile syncer.SyncFile) (syncer.SyncFil
 	return syncFile, nil
 }
 
-func (s googleDriveService) UpdateFile(syncFile syncer.SyncFile) error {
+func (s googleDriveService) UpdateFile(syncFile domain.SyncFile) error {
 	file := &drive.File{Id: syncFile.Id, Name: syncFile.Name, MimeType: syncFile.MimeType}
 
 	file, err := s.service.Files.Update(file.Id, &drive.File{Name: file.Name, MimeType: file.MimeType}).Media(bytes.NewReader(syncFile.Data)).Do()
@@ -136,7 +136,7 @@ func (s googleDriveService) UpdateFile(syncFile syncer.SyncFile) error {
 	return nil
 }
 
-func (s googleDriveService) ListFiles(parentSyncFile syncer.SyncFile) ([]syncer.SyncFile, error) {
+func (s googleDriveService) ListFiles(parentSyncFile domain.SyncFile) ([]domain.SyncFile, error) {
 	q := fmt.Sprintf("'%s' in parents and trashed = false", parentSyncFile.Id)
 
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType, shortcutDetails)").Q(q).Do()
@@ -144,10 +144,10 @@ func (s googleDriveService) ListFiles(parentSyncFile syncer.SyncFile) ([]syncer.
 		return nil, err
 	}
 
-	var files []syncer.SyncFile
+	var files []domain.SyncFile
 
 	for _, f := range list.Files {
-		sf := syncer.SyncFile{
+		sf := domain.SyncFile{
 			Name:     f.Name,
 			ParentId: getParentId(f),
 			Path:     parentSyncFile.Path + "/" + f.Name,
@@ -167,12 +167,12 @@ func (s googleDriveService) ListFiles(parentSyncFile syncer.SyncFile) ([]syncer.
 	return files, nil
 }
 
-func (s googleDriveService) IsDir(syncFile syncer.SyncFile) bool {
+func (s googleDriveService) IsDir(syncFile domain.SyncFile) bool {
 	return syncFile.MimeType == "application/vnd.google-apps.folder" ||
 		syncFile.MimeType == "application/vnd.google-apps.shortcut"
 }
 
-func NewDrive(credentialsPath string) syncer.SynchronizableDrive {
+func NewDrive(credentialsPath string) domain.SynchronizableDrive {
 	b, err := os.ReadFile(credentialsPath)
 	if err != nil {
 		log.Fatalf("Unable to read client secret file: %v", err)

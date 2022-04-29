@@ -1,7 +1,7 @@
 package main
 
 import (
-	"deni1688/gsync/domain/syncer"
+	"deni1688/gsync/domain"
 	"deni1688/gsync/infrastructure/cobracli"
 	"deni1688/gsync/infrastructure/googledrive"
 	"log"
@@ -13,7 +13,7 @@ func main() {
 	localDir := os.Getenv("LOCAL_GSYNC_DIR")
 
 	gd := googledrive.NewDrive(creds)
-	ss := syncer.NewService(localDir, gd)
+	ss := domain.NewSyncService(localDir, gd)
 	rt := cobracli.NewRuntime(ss)
 
 	if err := rt.Execute(); err != nil {

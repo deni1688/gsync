@@ -1,4 +1,4 @@
-package syncer
+package domain
 
 import (
 	"log"
@@ -11,7 +11,7 @@ type syncService struct {
 	drive          SynchronizableDrive
 }
 
-func NewService(localGsyncDir string, drive SynchronizableDrive) GsyncService {
+func NewSyncService(localGsyncDir string, drive SynchronizableDrive) GsyncService {
 	if localGsyncDir == "" {
 		localGsyncDir = os.Getenv("HOME") + "/Gsync"
 	}

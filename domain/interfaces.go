@@ -1,4 +1,4 @@
-package syncer
+package domain
 
 type SynchronizableDrive interface {
 	GetFile(syncFile SyncFile) ([]byte, error)

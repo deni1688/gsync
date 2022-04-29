@@ -1,4 +1,4 @@
-package syncer
+package domain
 
 func (g syncService) Sync(syncFile SyncFile) error {
 	var err error

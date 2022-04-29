@@ -1,4 +1,4 @@
-package syncer
+package domain
 
 type SyncFile struct {
 	Id       string

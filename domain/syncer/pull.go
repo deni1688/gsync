@@ -56,7 +56,6 @@ func (g syncService) removeFilesFromLocal(sf SyncFile, files []SyncFile) error {
 func (g syncService) addFilesFromRemote(sf SyncFile, files []SyncFile) error {
 	for _, file := range files {
 		fullPath := GetFullPath(sf.Path, file.Name)
-
 		log.Printf("Pulling %s", fullPath)
 
 		if g.drive.IsDir(file) {
@@ -66,20 +65,19 @@ func (g syncService) addFilesFromRemote(sf SyncFile, files []SyncFile) error {
 
 			file.Path = fullPath
 
-			err := g.Pull(file)
+			if err := g.Pull(file); err != nil {
+				return err
+			}
+		} else {
+			data, err := g.drive.GetFile(file)
 			if err != nil {
 				return err
 			}
 
-			continue
+			if err = os.WriteFile(fullPath, data, 0700); err != nil {
+				return err
+			}
 		}
-
-		data, err := g.drive.GetFile(file)
-		if err != nil {
-			return err
-		}
-
-		return os.WriteFile(fullPath, data, 0700)
 	}
 
 	return nil

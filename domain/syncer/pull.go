@@ -47,7 +47,7 @@ func (g syncService) removeFilesFromLocal(sf SyncFile, files []SyncFile) error {
 }
 
 func (g syncService) addFilesFromRemote(sf SyncFile, files []SyncFile) error {
-	errCh := make(chan error)
+	errCh := make(chan error, 1)
 
 	for _, file := range files {
 		go func(errCh chan error, file SyncFile) {
@@ -76,6 +76,7 @@ func (g syncService) addFilesFromRemote(sf SyncFile, files []SyncFile) error {
 					errCh <- err
 				}
 			}
+			errCh <- nil
 		}(errCh, file)
 	}
 

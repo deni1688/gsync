@@ -16,11 +16,14 @@ func (g syncService) Pull(sf SyncFile) error {
 		return err
 	}
 
+	if err = g.removeFilesFromLocal(sf, files); err != nil {
+		return err
+	}
+
 	return g.addFilesFromRemote(sf, files)
 }
 
 func (g syncService) removeFilesFromLocal(sf SyncFile, files []SyncFile) error {
-	errCh := make(chan error)
 	list, err := os.ReadDir(sf.Path)
 	if err != nil {
 		return err
@@ -34,57 +37,50 @@ func (g syncService) removeFilesFromLocal(sf SyncFile, files []SyncFile) error {
 			continue
 		}
 
-		var removeErr error
+		log.Printf("Removing %s", fullPath)
 
-		go func(errCh chan error, file os.DirEntry) {
-			log.Printf("Removing %s", fullPath)
-
-			if file.IsDir() {
-				removeErr = os.RemoveAll(fullPath)
-			} else {
-				removeErr = os.Remove(fullPath)
+		if file.IsDir() {
+			if err = os.RemoveAll(fullPath); err != nil {
+				return err
 			}
-
-			errCh <- removeErr
-		}(errCh, file)
+		} else {
+			if err = os.Remove(fullPath); err != nil {
+				return err
+			}
+		}
 	}
 
-	return <-errCh
+	return err
 }
 
 func (g syncService) addFilesFromRemote(sf SyncFile, files []SyncFile) error {
-	errCh := make(chan error, 1)
-
 	for _, file := range files {
-		go func(errCh chan error, file SyncFile) {
-			fullPath := GetFullPath(sf.Path, file.Name)
-			log.Printf("Pulling %s", fullPath)
+		fullPath := GetFullPath(sf.Path, file.Name)
 
-			if g.drive.IsDir(file) {
-				err := CreateDir(fullPath)
-				if err != nil {
-					errCh <- err
-				}
-				file.Path = fullPath
-				err = g.Pull(file)
-				if err != nil {
-					errCh <- err
-				}
-			} else {
-				data, err := g.drive.GetFile(file)
-				if err != nil {
-					errCh <- err
-				}
+		log.Printf("Pulling %s", fullPath)
 
-				file.Data = data
-
-				if err = os.WriteFile(fullPath, file.Data, 0700); err != nil {
-					errCh <- err
-				}
+		if g.drive.IsDir(file) {
+			if err := CreateDir(fullPath); err != nil {
+				return err
 			}
-			errCh <- nil
-		}(errCh, file)
+
+			file.Path = fullPath
+
+			err := g.Pull(file)
+			if err != nil {
+				return err
+			}
+
+			continue
+		}
+
+		data, err := g.drive.GetFile(file)
+		if err != nil {
+			return err
+		}
+
+		return os.WriteFile(fullPath, data, 0700)
 	}
 
-	return <-errCh
+	return nil
 }

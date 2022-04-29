@@ -1,4 +1,4 @@
-package googleDrive
+package googledrive
 
 import (
 	"bytes"
@@ -82,17 +82,22 @@ func (s googleDriveService) GetFile(syncFile syncer.SyncFile) ([]byte, error) {
 
 	if strings.Contains(syncFile.MimeType, "google-apps") {
 		resp, err = s.service.Files.Export(syncFile.Id, getExportMimeType(syncFile.MimeType)).Download()
+		if err != nil {
+			return nil, fmt.Errorf("export failed for %s %v\n", syncFile.Path, err)
+		}
 	} else {
 		resp, err = s.service.Files.Get(syncFile.Id).Download()
+		if err != nil {
+			return nil, fmt.Errorf("download failed for %s %v\n", syncFile.Path, err)
+		}
 	}
 
-	defer resp.Body.Close()
-
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read resp for %s %v\n", syncFile.Path, err)
 	}
 
-	return io.ReadAll(resp.Body)
+	return data, resp.Body.Close()
 }
 
 func getExportMimeType(driveMimeType string) string {
@@ -134,7 +139,7 @@ func (s googleDriveService) UpdateFile(syncFile syncer.SyncFile) error {
 func (s googleDriveService) ListFiles(parentSyncFile syncer.SyncFile) ([]syncer.SyncFile, error) {
 	q := fmt.Sprintf("'%s' in parents and trashed = false", parentSyncFile.Id)
 
-	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
+	list, err := s.service.Files.List().Fields("files(id, name, mimeType, shortcutDetails)").Q(q).Do()
 	if err != nil {
 		return nil, err
 	}
@@ -142,20 +147,29 @@ func (s googleDriveService) ListFiles(parentSyncFile syncer.SyncFile) ([]syncer.
 	var files []syncer.SyncFile
 
 	for _, f := range list.Files {
-		files = append(files, syncer.SyncFile{
-			Id:       f.Id,
+		sf := syncer.SyncFile{
 			Name:     f.Name,
-			MimeType: f.MimeType,
 			ParentId: getParentId(f),
 			Path:     parentSyncFile.Path + "/" + f.Name,
-		})
+		}
+
+		if f.MimeType == "application/vnd.google-apps.shortcut" {
+			sf.Id = f.ShortcutDetails.TargetId
+			sf.MimeType = f.ShortcutDetails.TargetMimeType
+		} else {
+			sf.Id = f.Id
+			sf.MimeType = f.MimeType
+		}
+
+		files = append(files, sf)
 	}
 
 	return files, nil
 }
 
 func (s googleDriveService) IsDir(syncFile syncer.SyncFile) bool {
-	return syncFile.MimeType == "application/vnd.google-apps.folder"
+	return syncFile.MimeType == "application/vnd.google-apps.folder" ||
+		syncFile.MimeType == "application/vnd.google-apps.shortcut"
 }
 
 func NewDrive(credentialsPath string) syncer.SynchronizableDrive {

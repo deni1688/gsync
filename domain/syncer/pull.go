@@ -1,6 +1,7 @@
 package syncer
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -18,38 +19,53 @@ func (g syncService) Pull(sf SyncFile) error {
 		return err
 	}
 
-	if err = g.removeFilesFromLocal(sf, files); err != nil {
+	if err = g.cleanLocalFiles(sf, files); err != nil {
 		return err
 	}
 
 	return g.downloadFiles(sf, files)
 }
 
-func (g syncService) removeFilesFromLocal(sf SyncFile, files []SyncFile) error {
+func (g syncService) cleanLocalFiles(sf SyncFile, files []SyncFile) error {
 	list, err := os.ReadDir(sf.Path)
 	if err != nil {
 		return err
 	}
 
+	var wg sync.WaitGroup
+	errCh := make(chan error, 1)
+
 	for _, file := range list {
 		name := file.Name()
 		fullPath := GetFullPath(sf.Path, name)
 
-		if SyncFileListContains(files, name) {
-			continue
-		}
-
-		log.Printf("Removing %s", fullPath)
-
-		if file.IsDir() {
-			if err = os.RemoveAll(fullPath); err != nil {
-				return err
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, file os.DirEntry) {
+			if SyncFileListContains(files, name) {
+				wg.Done()
+				return
 			}
-		} else {
-			if err = os.Remove(fullPath); err != nil {
-				return err
+
+			log.Printf("Removing %s", fullPath)
+
+			if file.IsDir() {
+				log.Printf("Removing dir %s", fullPath)
+				if err = os.RemoveAll(fullPath); err != nil {
+					errCh <- fmt.Errorf("could not remove dir %s: %v\n", fullPath, err)
+				}
+			} else {
+				log.Printf("Removing file %s", fullPath)
+				if err = os.Remove(fullPath); err != nil {
+					errCh <- fmt.Errorf("could not remove file %s: %v\n", fullPath, err)
+				}
 			}
-		}
+			wg.Done()
+		}(&wg, file)
+	}
+	wg.Wait()
+
+	if len(errCh) < 1 {
+		errCh <- nil
 	}
 
 	return err
@@ -70,23 +86,24 @@ func (g syncService) downloadFiles(sf SyncFile, files []SyncFile) error {
 				log.Printf("Pulling dir %s", fullPath)
 
 				if err := CreateDir(fullPath); err != nil {
-					errCh <- err
+					errCh <- fmt.Errorf("could not create dir %s: %v\n", fullPath, err)
 				}
 
 				file.Path = fullPath
 
 				if err := g.Pull(file); err != nil {
-					errCh <- err
+					errCh <- fmt.Errorf("could not pull dir %s: %v\n", fullPath, err)
 				}
 			} else {
 				log.Printf("Pulling file %s", fullPath)
+
 				data, err := g.drive.GetFile(file)
 				if err != nil {
-					errCh <- err
+					errCh <- fmt.Errorf("could not get file %v: %v\n", file, err)
 				}
 
 				if err = os.WriteFile(fullPath, data, 0700); err != nil {
-					errCh <- err
+					errCh <- fmt.Errorf("could not write file %s: %v\n", fullPath, err)
 				}
 			}
 		}(&wg, file)

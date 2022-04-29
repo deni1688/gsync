@@ -1,4 +1,4 @@
-package cobraCli
+package cobracli
 
 import (
 	"deni1688/gsync/domain/syncer"

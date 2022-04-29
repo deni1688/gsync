@@ -1,4 +1,4 @@
-package googleDrive
+package googledrive
 
 import (
 	"encoding/json"

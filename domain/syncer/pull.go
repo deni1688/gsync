@@ -20,7 +20,7 @@ func (g syncService) Pull(sf SyncFile) error {
 		return err
 	}
 
-	return g.addFilesFromRemote(sf, files)
+	return g.downloadFiles(sf, files)
 }
 
 func (g syncService) removeFilesFromLocal(sf SyncFile, files []SyncFile) error {
@@ -53,7 +53,7 @@ func (g syncService) removeFilesFromLocal(sf SyncFile, files []SyncFile) error {
 	return err
 }
 
-func (g syncService) addFilesFromRemote(sf SyncFile, files []SyncFile) error {
+func (g syncService) downloadFiles(sf SyncFile, files []SyncFile) error {
 	for _, file := range files {
 		fullPath := GetFullPath(sf.Path, file.Name)
 		log.Printf("Pulling %s", fullPath)

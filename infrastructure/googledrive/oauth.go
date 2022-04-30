@@ -69,7 +69,7 @@ func startTempAuthServer(codeCh chan string, srv *http.Server) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Gsycn Auth</title>
+    <title>Gsync Auth</title>
     <link rel="stylesheet" href="https://bootswatch.com/5/lux/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <style>

@@ -65,35 +65,58 @@ func startTempAuthServer(codeCh chan string, srv *http.Server) {
 	http.HandleFunc("/oauth2callback", func(w http.ResponseWriter, r *http.Request) {
 		code := r.URL.Query().Get("code")
 		fmt.Fprint(w, `
-			<html>
-				<head><title>Gsync OAuth2</title></head>
-				<body>
-					<p style="font: 15px Arial, sans-serif;">Ahoy! You have been authenticated! Closing this window...</p>
-				</body>
-			</html>`)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gsycn Auth</title>
+    <link rel="stylesheet" href="https://bootswatch.com/5/lux/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        html, body {
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="bg-dark d-flex flex-column justify-content-center align-items-center">
+<div class="col-3">
+    <div class="card card-body text-center">
+        <i class="bi bi-check-circle-fill text-success" style="font-size: 50px"></i>
+        <h4>Auth Success!</h4>
+        <p>You can close this page now.</p>
+    </div>
+</div>
+</body>
+</html>`)
 		codeCh <- code
 	})
 
 	_ = srv.ListenAndServe()
 }
 
-func tokenFromFile(file string) (*oauth2.Token, error) {
-	f, err := os.Open(file)
+func tokenFromFile(path string) (*oauth2.Token, error) {
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
-	tok := &oauth2.Token{}
-	err = json.NewDecoder(f).Decode(tok)
+	defer file.Close()
+
+	tok := new(oauth2.Token)
+	err = json.NewDecoder(file).Decode(tok)
+
 	return tok, err
 }
 
 func saveToken(path string, token *oauth2.Token) {
 	fmt.Printf("Saving token.json file to: %s\n", path)
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Fatalf("Unable to cache oauth token: %v", err)
 	}
-	defer f.Close()
-	json.NewEncoder(f).Encode(token)
+	defer file.Close()
+
+	if err = json.NewEncoder(file).Encode(token); err != nil {
+		log.Fatalf("Unable to encode oauth token: %v", err)
+	}
 }

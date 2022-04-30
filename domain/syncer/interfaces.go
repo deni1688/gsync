@@ -1,6 +1,6 @@
-package domain
+package syncer
 
-type SynchronizableDrive interface {
+type SyncProvider interface {
 	IsDir(syncFile SyncFile) bool
 	GetFile(syncFile SyncFile) ([]byte, error)
 	CreateDir(syncFile SyncFile) (SyncFile, error)
@@ -10,7 +10,7 @@ type SynchronizableDrive interface {
 }
 
 type GsyncService interface {
-	Pull(dir SyncFile) error
-	Push(dir SyncFile) error
-	Sync(dir SyncFile) error
+	PullFiles(dir SyncFile) error
+	PushFiles(dir SyncFile) error
+	SyncFiles(dir SyncFile) error
 }

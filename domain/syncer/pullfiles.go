@@ -1,4 +1,4 @@
-package domain
+package syncer
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (g syncService) Pull(dir SyncFile) error {
+func (g syncService) PullFiles(dir SyncFile) error {
 	if dir.Name == "Gsync" {
 		dir.Id = g.remoteGsyncDir
 		dir.Path = g.localGsyncDir
@@ -18,7 +18,7 @@ func (g syncService) Pull(dir SyncFile) error {
 		return fmt.Errorf("dir id is required")
 	}
 
-	files, err := g.drive.ListFiles(dir)
+	files, err := g.syncProvider.ListFiles(dir)
 	if err != nil {
 		return err
 	}
@@ -86,7 +86,7 @@ func (g syncService) downloadFiles(dir SyncFile, files []SyncFile) error {
 		go func(wg *sync.WaitGroup, file SyncFile) {
 			defer wg.Done()
 
-			if g.drive.IsDir(file) {
+			if g.syncProvider.IsDir(file) {
 				log.Printf("Pulling dir %s", fullPath)
 
 				if err := CreateDir(fullPath); err != nil {
@@ -95,13 +95,13 @@ func (g syncService) downloadFiles(dir SyncFile, files []SyncFile) error {
 
 				file.Path = fullPath
 
-				if err := g.Pull(file); err != nil {
+				if err := g.PullFiles(file); err != nil {
 					errCh <- fmt.Errorf("could not pull dir %s: %v\n", fullPath, err)
 				}
 			} else {
 				log.Printf("Pulling file %s", fullPath)
 
-				data, err := g.drive.GetFile(file)
+				data, err := g.syncProvider.GetFile(file)
 				if err != nil {
 					errCh <- fmt.Errorf("could not get file %v: %v\n", file, err)
 				}

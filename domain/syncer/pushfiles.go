@@ -1,4 +1,4 @@
-package domain
+package syncer
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func (g syncService) Push(dir SyncFile) error {
+func (g syncService) PushFiles(dir SyncFile) error {
 	if dir.Name == "Gsync" {
 		dir.Id = g.remoteGsyncDir
 		dir.Path = g.localGsyncDir
@@ -33,12 +33,12 @@ func (g syncService) Push(dir SyncFile) error {
 		}
 
 		if file.IsDir() {
-			f, err = g.drive.CreateDir(f)
+			f, err = g.syncProvider.CreateDir(f)
 			if err != nil {
 				return err
 			}
 
-			if err = g.Push(f); err != nil {
+			if err = g.PushFiles(f); err != nil {
 				return err
 			}
 
@@ -50,7 +50,7 @@ func (g syncService) Push(dir SyncFile) error {
 			return err
 		}
 
-		f, err = g.drive.CreateFile(f)
+		f, err = g.syncProvider.CreateFile(f)
 	}
 
 	// TODO: Remove files from remote that are not in local

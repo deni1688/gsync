@@ -1,9 +1,9 @@
-package googledrive
+package google
 
 import (
 	"bytes"
 	"context"
-	"deni1688/gsync/domain"
+	"deni1688/gsync/domain/syncer"
 	"fmt"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
@@ -26,21 +26,42 @@ var mimeTypeMap = map[string]string{
 	"application/vnd.google-apps.presentation": "application/vnd.oasis.opendocument.presentation",
 }
 
-type googleDriveService struct {
+type googleDriveSyncProvider struct {
 	service *drive.Service
 }
 
-func (s googleDriveService) CreateDir(dir domain.SyncFile) (domain.SyncFile, error) {
+func NewSyncProvider(credentialsPath string) syncer.SyncProvider {
+	b, err := os.ReadFile(credentialsPath)
+	if err != nil {
+		log.Fatalf("Unable to read client secret file: %v", err)
+	}
+
+	config, err := google.ConfigFromJSON(b, drive.DriveScope)
+	if err != nil {
+		log.Fatalf("Unable to parse client secret file to config: %v", err)
+	}
+
+	client := getClient(config)
+
+	service, err := drive.NewService(context.TODO(), option.WithHTTPClient(client))
+	if err != nil {
+		log.Fatalf("Unable to retrieve Drive client: %v", err)
+	}
+
+	return &googleDriveSyncProvider{service}
+}
+
+func (s googleDriveSyncProvider) CreateDir(dir syncer.SyncFile) (syncer.SyncFile, error) {
 	q := fmt.Sprintf("name = '%s' and trashed = false", dir.Name)
 
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
 	if err != nil {
-		return domain.SyncFile{}, err
+		return syncer.SyncFile{}, err
 	}
 
 	if len(list.Files) > 0 {
 		f := list.Files[0]
-		return domain.SyncFile{
+		return syncer.SyncFile{
 			Id:       f.Id,
 			Name:     f.Name,
 			MimeType: f.MimeType,
@@ -57,10 +78,10 @@ func (s googleDriveService) CreateDir(dir domain.SyncFile) (domain.SyncFile, err
 
 	file, err = s.service.Files.Create(file).Do()
 	if err != nil {
-		return domain.SyncFile{}, err
+		return syncer.SyncFile{}, err
 	}
 
-	return domain.SyncFile{
+	return syncer.SyncFile{
 		Id:       file.Id,
 		Name:     file.Name,
 		MimeType: file.MimeType,
@@ -76,7 +97,7 @@ func getParentId(f *drive.File) string {
 	return ""
 }
 
-func (s googleDriveService) GetFile(syncFile domain.SyncFile) ([]byte, error) {
+func (s googleDriveSyncProvider) GetFile(syncFile syncer.SyncFile) ([]byte, error) {
 	var err error
 	resp := new(http.Response)
 
@@ -107,7 +128,7 @@ func getExportMimeType(driveMimeType string) string {
 	return "application/octet-stream"
 }
 
-func (s googleDriveService) CreateFile(syncFile domain.SyncFile) (domain.SyncFile, error) {
+func (s googleDriveSyncProvider) CreateFile(syncFile syncer.SyncFile) (syncer.SyncFile, error) {
 	file := &drive.File{Name: syncFile.Name, MimeType: syncFile.MimeType}
 
 	if syncFile.ParentId != "" {
@@ -116,7 +137,7 @@ func (s googleDriveService) CreateFile(syncFile domain.SyncFile) (domain.SyncFil
 
 	file, err := s.service.Files.Create(file).Media(bytes.NewReader(syncFile.Data)).Do()
 	if err != nil {
-		return domain.SyncFile{}, err
+		return syncer.SyncFile{}, err
 	}
 
 	syncFile.Id = file.Id
@@ -124,7 +145,7 @@ func (s googleDriveService) CreateFile(syncFile domain.SyncFile) (domain.SyncFil
 	return syncFile, nil
 }
 
-func (s googleDriveService) UpdateFile(syncFile domain.SyncFile) error {
+func (s googleDriveSyncProvider) UpdateFile(syncFile syncer.SyncFile) error {
 	file := &drive.File{Id: syncFile.Id, Name: syncFile.Name, MimeType: syncFile.MimeType}
 
 	file, err := s.service.Files.Update(file.Id, &drive.File{Name: file.Name, MimeType: file.MimeType}).Media(bytes.NewReader(syncFile.Data)).Do()
@@ -136,7 +157,7 @@ func (s googleDriveService) UpdateFile(syncFile domain.SyncFile) error {
 	return nil
 }
 
-func (s googleDriveService) ListFiles(dir domain.SyncFile) ([]domain.SyncFile, error) {
+func (s googleDriveSyncProvider) ListFiles(dir syncer.SyncFile) ([]syncer.SyncFile, error) {
 	q := fmt.Sprintf("'%s' in parents and trashed = false", dir.Id)
 
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType, shortcutDetails)").Q(q).Do()
@@ -144,10 +165,10 @@ func (s googleDriveService) ListFiles(dir domain.SyncFile) ([]domain.SyncFile, e
 		return nil, err
 	}
 
-	var files []domain.SyncFile
+	var files []syncer.SyncFile
 
 	for _, f := range list.Files {
-		sf := domain.SyncFile{
+		sf := syncer.SyncFile{
 			Name:     f.Name,
 			ParentId: getParentId(f),
 			Path:     dir.Path + "/" + f.Name,
@@ -167,27 +188,6 @@ func (s googleDriveService) ListFiles(dir domain.SyncFile) ([]domain.SyncFile, e
 	return files, nil
 }
 
-func (s googleDriveService) IsDir(syncFile domain.SyncFile) bool {
+func (s googleDriveSyncProvider) IsDir(syncFile syncer.SyncFile) bool {
 	return syncFile.MimeType == "application/vnd.google-apps.folder"
-}
-
-func NewDrive(credentialsPath string) domain.SynchronizableDrive {
-	b, err := os.ReadFile(credentialsPath)
-	if err != nil {
-		log.Fatalf("Unable to read client secret file: %v", err)
-	}
-
-	config, err := google.ConfigFromJSON(b, drive.DriveScope)
-	if err != nil {
-		log.Fatalf("Unable to parse client secret file to config: %v", err)
-	}
-
-	client := getClient(config)
-
-	service, err := drive.NewService(context.TODO(), option.WithHTTPClient(client))
-	if err != nil {
-		log.Fatalf("Unable to retrieve Drive client: %v", err)
-	}
-
-	return &googleDriveService{service}
 }

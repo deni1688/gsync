@@ -1,10 +1,13 @@
 package domain
 
-func (g syncService) Sync(syncFile SyncFile) error {
-	var err error
+func (g syncService) Sync(dir SyncFile) error {
+	if err := g.Push(dir); err != nil {
+		return err
+	}
 
-	err = g.Push(syncFile)
-	err = g.Pull(syncFile)
+	if err := g.Pull(dir); err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }

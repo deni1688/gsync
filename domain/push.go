@@ -1,30 +1,35 @@
 package domain
 
 import (
+	"fmt"
 	"log"
 	"os"
 )
 
-func (g syncService) Push(sf SyncFile) error {
-	if sf.Name == "Gsync" {
-		sf.Id = g.remoteGsyncDir
-		sf.Path = g.localGsyncDir
+func (g syncService) Push(dir SyncFile) error {
+	if dir.Name == "Gsync" {
+		dir.Id = g.remoteGsyncDir
+		dir.Path = g.localGsyncDir
 	}
 
-	list, err := os.ReadDir(sf.Path)
+	if dir.Id == "" {
+		return fmt.Errorf("dir id is required")
+	}
+
+	list, err := os.ReadDir(dir.Path)
 	if err != nil {
 		return err
 	}
 
 	for _, file := range list {
-		fullPath := GetPathFrom(sf.Path, file.Name())
+		fullPath := GetPathFrom(dir.Path, file.Name())
 
 		log.Printf("Pushing %s", fullPath)
 
 		f := SyncFile{
 			Name:     file.Name(),
 			Path:     fullPath,
-			ParentId: sf.Id,
+			ParentId: dir.Id,
 		}
 
 		if file.IsDir() {

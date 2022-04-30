@@ -8,26 +8,30 @@ import (
 	"time"
 )
 
-func (g syncService) Pull(sf SyncFile) error {
-	if sf.Name == "Gsync" {
-		sf.Id = g.remoteGsyncDir
-		sf.Path = g.localGsyncDir
+func (g syncService) Pull(dir SyncFile) error {
+	if dir.Name == "Gsync" {
+		dir.Id = g.remoteGsyncDir
+		dir.Path = g.localGsyncDir
 	}
 
-	files, err := g.drive.ListFiles(sf)
+	if dir.Id == "" {
+		return fmt.Errorf("dir id is required")
+	}
+
+	files, err := g.drive.ListFiles(dir)
 	if err != nil {
 		return err
 	}
 
-	if err = g.cleanLocalFiles(sf, files); err != nil {
+	if err = g.cleanLocalFiles(dir, files); err != nil {
 		return err
 	}
 
-	return g.downloadFiles(sf, files)
+	return g.downloadFiles(dir, files)
 }
 
-func (g syncService) cleanLocalFiles(sf SyncFile, files []SyncFile) error {
-	list, err := os.ReadDir(sf.Path)
+func (g syncService) cleanLocalFiles(dir SyncFile, files []SyncFile) error {
+	list, err := os.ReadDir(dir.Path)
 	if err != nil {
 		return err
 	}
@@ -37,7 +41,7 @@ func (g syncService) cleanLocalFiles(sf SyncFile, files []SyncFile) error {
 
 	for _, file := range list {
 		name := file.Name()
-		fullPath := GetPathFrom(sf.Path, name)
+		fullPath := GetPathFrom(dir.Path, name)
 
 		wg.Add(1)
 		go func(wg *sync.WaitGroup, file os.DirEntry) {
@@ -71,12 +75,12 @@ func (g syncService) cleanLocalFiles(sf SyncFile, files []SyncFile) error {
 	return err
 }
 
-func (g syncService) downloadFiles(sf SyncFile, files []SyncFile) error {
+func (g syncService) downloadFiles(dir SyncFile, files []SyncFile) error {
 	var wg sync.WaitGroup
 	errCh := make(chan error, 1)
 
 	for _, file := range files {
-		fullPath := GetPathFrom(sf.Path, file.Name)
+		fullPath := GetPathFrom(dir.Path, file.Name)
 
 		wg.Add(1)
 		go func(wg *sync.WaitGroup, file SyncFile) {

@@ -1,16 +1,16 @@
 package domain
 
 type SynchronizableDrive interface {
-	GetFile(syncFile SyncFile) ([]byte, error)
-	CreateFile(syncFile SyncFile) (SyncFile, error)
-	CreateDir(syncFile SyncFile) (SyncFile, error)
-	UpdateFile(syncFile SyncFile) error
-	ListFiles(parentSyncFile SyncFile) ([]SyncFile, error)
 	IsDir(syncFile SyncFile) bool
+	GetFile(syncFile SyncFile) ([]byte, error)
+	CreateDir(syncFile SyncFile) (SyncFile, error)
+	CreateFile(syncFile SyncFile) (SyncFile, error)
+	UpdateFile(syncFile SyncFile) error
+	ListFiles(dir SyncFile) ([]SyncFile, error)
 }
 
 type GsyncService interface {
-	Pull(syncFile SyncFile) error
-	Push(syncFile SyncFile) error
-	Sync(syncFile SyncFile) error
+	Pull(dir SyncFile) error
+	Push(dir SyncFile) error
+	Sync(dir SyncFile) error
 }

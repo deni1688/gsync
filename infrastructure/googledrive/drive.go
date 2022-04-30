@@ -30,8 +30,8 @@ type googleDriveService struct {
 	service *drive.Service
 }
 
-func (s googleDriveService) CreateDir(dirSyncFile domain.SyncFile) (domain.SyncFile, error) {
-	q := fmt.Sprintf("name = '%s' and trashed = false", dirSyncFile.Name)
+func (s googleDriveService) CreateDir(dir domain.SyncFile) (domain.SyncFile, error) {
+	q := fmt.Sprintf("name = '%s' and trashed = false", dir.Name)
 
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
 	if err != nil {
@@ -45,14 +45,14 @@ func (s googleDriveService) CreateDir(dirSyncFile domain.SyncFile) (domain.SyncF
 			Name:     f.Name,
 			MimeType: f.MimeType,
 			ParentId: getParentId(f),
-			Path:     dirSyncFile.Path,
+			Path:     dir.Path,
 		}, nil
 	}
 
 	file := &drive.File{
-		Name:     dirSyncFile.Name,
+		Name:     dir.Name,
 		MimeType: "application/vnd.google-apps.folder",
-		Parents:  []string{dirSyncFile.ParentId},
+		Parents:  []string{dir.ParentId},
 	}
 
 	file, err = s.service.Files.Create(file).Do()
@@ -65,7 +65,7 @@ func (s googleDriveService) CreateDir(dirSyncFile domain.SyncFile) (domain.SyncF
 		Name:     file.Name,
 		MimeType: file.MimeType,
 		ParentId: getParentId(file),
-		Path:     dirSyncFile.Path,
+		Path:     dir.Path,
 	}, nil
 }
 
@@ -136,8 +136,8 @@ func (s googleDriveService) UpdateFile(syncFile domain.SyncFile) error {
 	return nil
 }
 
-func (s googleDriveService) ListFiles(parentSyncFile domain.SyncFile) ([]domain.SyncFile, error) {
-	q := fmt.Sprintf("'%s' in parents and trashed = false", parentSyncFile.Id)
+func (s googleDriveService) ListFiles(dir domain.SyncFile) ([]domain.SyncFile, error) {
+	q := fmt.Sprintf("'%s' in parents and trashed = false", dir.Id)
 
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType, shortcutDetails)").Q(q).Do()
 	if err != nil {
@@ -150,7 +150,7 @@ func (s googleDriveService) ListFiles(parentSyncFile domain.SyncFile) ([]domain.
 		sf := domain.SyncFile{
 			Name:     f.Name,
 			ParentId: getParentId(f),
-			Path:     parentSyncFile.Path + "/" + f.Name,
+			Path:     dir.Path + "/" + f.Name,
 		}
 
 		if f.MimeType == "application/vnd.google-apps.shortcut" {
@@ -168,8 +168,7 @@ func (s googleDriveService) ListFiles(parentSyncFile domain.SyncFile) ([]domain.
 }
 
 func (s googleDriveService) IsDir(syncFile domain.SyncFile) bool {
-	return syncFile.MimeType == "application/vnd.google-apps.folder" ||
-		syncFile.MimeType == "application/vnd.google-apps.shortcut"
+	return syncFile.MimeType == "application/vnd.google-apps.folder"
 }
 
 func NewDrive(credentialsPath string) domain.SynchronizableDrive {

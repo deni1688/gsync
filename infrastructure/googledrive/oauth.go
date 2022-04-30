@@ -14,10 +14,12 @@ import (
 func getClient(config *oauth2.Config) *http.Client {
 	tokenFile := os.Getenv("HOME") + "/.gsync/token.json"
 	token, err := tokenFromFile(tokenFile)
-	if err != nil {
+
+	if err != nil || !token.Valid() {
 		token = getTokenFromWeb(config)
 		saveToken(tokenFile, token)
 	}
+
 	return config.Client(context.Background(), token)
 }
 
@@ -29,13 +31,13 @@ func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 		log.Fatalf("Unable to open browser: %v", err)
 	}
 
-	ch := make(chan string)
+	codeCh := make(chan string)
 	srv := &http.Server{Addr: ":9999"}
 
-	go startTempAuthServer(ch, srv)
+	go startTempAuthServer(codeCh, srv)
 
 	log.Println("Waiting for auth code...")
-	code := <-ch
+	code := <-codeCh
 	log.Println("Received auth code!")
 
 	stopTempAuthServer(srv)
@@ -59,7 +61,7 @@ func stopTempAuthServer(srv *http.Server) {
 	log.Println("Auth server stopped")
 }
 
-func startTempAuthServer(ch chan string, srv *http.Server) {
+func startTempAuthServer(codeCh chan string, srv *http.Server) {
 	http.HandleFunc("/oauth2callback", func(w http.ResponseWriter, r *http.Request) {
 		code := r.URL.Query().Get("code")
 		fmt.Fprint(w, `
@@ -69,7 +71,7 @@ func startTempAuthServer(ch chan string, srv *http.Server) {
 					<p style="font: 15px Arial, sans-serif;">Ahoy! You have been authenticated! Closing this window...</p>
 				</body>
 			</html>`)
-		ch <- code
+		codeCh <- code
 	})
 
 	_ = srv.ListenAndServe()

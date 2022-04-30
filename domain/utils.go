@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-func SyncFileListContains(list []SyncFile, name string) bool {
-	for _, file := range list {
+func FileListContains(fileList []SyncFile, name string) bool {
+	for _, file := range fileList {
 		if file.Name == name {
 			return true
 		}
@@ -15,14 +15,14 @@ func SyncFileListContains(list []SyncFile, name string) bool {
 	return false
 }
 
-func GetFullPath(items ...string) string {
-	return strings.Join(items, "/")
+func GetPathFrom(pathItems ...string) string {
+	return strings.Join(pathItems, "/")
 }
 
-func CreateDir(path string) error {
-	_, err := os.Stat(path)
+func CreateDir(dirFullPath string) error {
+	_, err := os.Stat(dirFullPath)
 	if os.IsNotExist(err) {
-		err = os.Mkdir(path, 0700)
+		err = os.Mkdir(dirFullPath, 0700)
 	}
 
 	return err

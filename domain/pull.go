@@ -37,11 +37,11 @@ func (g syncService) cleanLocalFiles(sf SyncFile, files []SyncFile) error {
 
 	for _, file := range list {
 		name := file.Name()
-		fullPath := GetFullPath(sf.Path, name)
+		fullPath := GetPathFrom(sf.Path, name)
 
 		wg.Add(1)
 		go func(wg *sync.WaitGroup, file os.DirEntry) {
-			if SyncFileListContains(files, name) {
+			if FileListContains(files, name) {
 				wg.Done()
 				return
 			}
@@ -76,7 +76,7 @@ func (g syncService) downloadFiles(sf SyncFile, files []SyncFile) error {
 	errCh := make(chan error, 1)
 
 	for _, file := range files {
-		fullPath := GetFullPath(sf.Path, file.Name)
+		fullPath := GetPathFrom(sf.Path, file.Name)
 
 		wg.Add(1)
 		go func(wg *sync.WaitGroup, file SyncFile) {

@@ -17,7 +17,7 @@ func (g syncService) Push(sf SyncFile) error {
 	}
 
 	for _, file := range list {
-		fullPath := GetFullPath(sf.Path, file.Name())
+		fullPath := GetPathFrom(sf.Path, file.Name())
 
 		log.Printf("Pushing %s", fullPath)
 

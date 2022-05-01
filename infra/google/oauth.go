@@ -11,6 +11,27 @@ import (
 	"os/exec"
 )
 
+const successHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gsync Auth</title>
+    <link rel="stylesheet" href="https://bootswatch.com/5/lux/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style> html, body { height: 100%; } </style>
+</head>
+<body class="bg-dark d-flex flex-column justify-content-center align-items-center">
+<div class="col-3">
+    <div class="card card-body text-center">
+        <i class="bi bi-check-circle-fill text-success" style="font-size: 50px"></i>
+        <h4>Auth Success!</h4>
+        <p>You can close this page now.</p>
+    </div>
+</div>
+</body>
+</html>`
+
 func getClient(config *oauth2.Config) *http.Client {
 	tokenFile := os.Getenv("HOME") + "/.gsync/token.json"
 	token, err := tokenFromFile(tokenFile)
@@ -64,30 +85,7 @@ func stopTempAuthServer(srv *http.Server) {
 func startTempAuthServer(codeCh chan string, srv *http.Server) {
 	http.HandleFunc("/oauth2callback", func(w http.ResponseWriter, r *http.Request) {
 		code := r.URL.Query().Get("code")
-		fmt.Fprint(w, `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Gsync Auth</title>
-    <link rel="stylesheet" href="https://bootswatch.com/5/lux/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-    <style>
-        html, body {
-            height: 100%;
-        }
-    </style>
-</head>
-<body class="bg-dark d-flex flex-column justify-content-center align-items-center">
-<div class="col-3">
-    <div class="card card-body text-center">
-        <i class="bi bi-check-circle-fill text-success" style="font-size: 50px"></i>
-        <h4>Auth Success!</h4>
-        <p>You can close this page now.</p>
-    </div>
-</div>
-</body>
-</html>`)
+		_, _ = fmt.Fprint(w, successHtml)
 		codeCh <- code
 	})
 

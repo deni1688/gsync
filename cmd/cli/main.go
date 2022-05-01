@@ -1,10 +1,10 @@
 package main
 
 import (
-	"deni1688/gsync/domain/syncer"
-	"deni1688/gsync/infrastructure/aws"
-	"deni1688/gsync/infrastructure/cobra"
-	"deni1688/gsync/infrastructure/google"
+	"deni1688/gsync/infra/aws"
+	"deni1688/gsync/infra/cobra"
+	"deni1688/gsync/infra/google"
+	"deni1688/gsync/syncer"
 	"log"
 	"os"
 )
@@ -16,7 +16,7 @@ var (
 )
 
 func main() {
-	sp := getSyncProvider(providerConfig)
+	sp := selectSyncProvider(providerConfig)
 
 	gs := syncer.NewService(localDir, sp)
 	c := cobra.NewCLI(gs)
@@ -26,7 +26,7 @@ func main() {
 	}
 }
 
-func getSyncProvider(providerConfig string) syncer.SyncProvider {
+func selectSyncProvider(providerConfig string) syncer.SyncProvider {
 	if providerConfig == "" {
 		log.Fatalf("SYNC_PROVIDER env variable required! You can specify  google or aws")
 	}

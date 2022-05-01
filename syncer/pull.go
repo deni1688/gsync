@@ -8,29 +8,29 @@ import (
 	"time"
 )
 
-func (g syncService) PullFiles(dir SyncFile) error {
+func (gs gsyncService) Pull(dir SyncFile) error {
 	if dir.Name == "Gsync" {
-		dir.Id = g.remoteGsyncDir
-		dir.Path = g.localGsyncDir
+		dir.Id = gs.remoteGsyncDir
+		dir.Path = gs.localGsyncDir
 	}
 
 	if dir.Id == "" {
 		return fmt.Errorf("dir id is required")
 	}
 
-	files, err := g.syncProvider.ListFiles(dir)
+	files, err := gs.syncProvider.ListFiles(dir)
 	if err != nil {
 		return err
 	}
 
-	if err = g.cleanLocalFiles(dir, files); err != nil {
+	if err = gs.cleanLocalFiles(dir, files); err != nil {
 		return err
 	}
 
-	return g.downloadFiles(dir, files)
+	return gs.downloadFiles(dir, files)
 }
 
-func (g syncService) cleanLocalFiles(dir SyncFile, files []SyncFile) error {
+func (gs gsyncService) cleanLocalFiles(dir SyncFile, files []SyncFile) error {
 	list, err := os.ReadDir(dir.Path)
 	if err != nil {
 		return err
@@ -41,11 +41,11 @@ func (g syncService) cleanLocalFiles(dir SyncFile, files []SyncFile) error {
 
 	for _, file := range list {
 		name := file.Name()
-		fullPath := GetPathFrom(dir.Path, name)
+		fullPath := getPath(dir.Path, name)
 
 		wg.Add(1)
 		go func(wg *sync.WaitGroup, file os.DirEntry) {
-			if FileListContains(files, name) {
+			if fileListContains(files, name) {
 				wg.Done()
 				return
 			}
@@ -75,33 +75,33 @@ func (g syncService) cleanLocalFiles(dir SyncFile, files []SyncFile) error {
 	return err
 }
 
-func (g syncService) downloadFiles(dir SyncFile, files []SyncFile) error {
+func (gs gsyncService) downloadFiles(dir SyncFile, files []SyncFile) error {
 	var wg sync.WaitGroup
 	errCh := make(chan error, 1)
 
 	for _, file := range files {
-		fullPath := GetPathFrom(dir.Path, file.Name)
+		fullPath := getPath(dir.Path, file.Name)
 
 		wg.Add(1)
 		go func(wg *sync.WaitGroup, file SyncFile) {
 			defer wg.Done()
 
-			if g.syncProvider.IsDir(file) {
+			if gs.syncProvider.IsDir(file) {
 				log.Printf("Pulling dir %s", fullPath)
 
-				if err := CreateDir(fullPath); err != nil {
+				if err := createDirs(fullPath); err != nil {
 					errCh <- fmt.Errorf("could not create dir %s: %v\n", fullPath, err)
 				}
 
 				file.Path = fullPath
 
-				if err := g.PullFiles(file); err != nil {
+				if err := gs.Pull(file); err != nil {
 					errCh <- fmt.Errorf("could not pull dir %s: %v\n", fullPath, err)
 				}
 			} else {
 				log.Printf("Pulling file %s", fullPath)
 
-				data, err := g.syncProvider.GetFile(file)
+				data, err := gs.syncProvider.GetFile(file)
 				if err != nil {
 					errCh <- fmt.Errorf("could not get file %v: %v\n", file, err)
 				}

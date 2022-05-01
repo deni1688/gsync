@@ -6,10 +6,10 @@ import (
 	"os"
 )
 
-func (g syncService) PushFiles(dir SyncFile) error {
+func (gs gsyncService) Push(dir SyncFile) error {
 	if dir.Name == "Gsync" {
-		dir.Id = g.remoteGsyncDir
-		dir.Path = g.localGsyncDir
+		dir.Id = gs.remoteGsyncDir
+		dir.Path = gs.localGsyncDir
 	}
 
 	if dir.Id == "" {
@@ -22,7 +22,7 @@ func (g syncService) PushFiles(dir SyncFile) error {
 	}
 
 	for _, file := range list {
-		fullPath := GetPathFrom(dir.Path, file.Name())
+		fullPath := getPath(dir.Path, file.Name())
 
 		log.Printf("Pushing %s", fullPath)
 
@@ -33,12 +33,12 @@ func (g syncService) PushFiles(dir SyncFile) error {
 		}
 
 		if file.IsDir() {
-			f, err = g.syncProvider.CreateDir(f)
+			f, err = gs.syncProvider.CreateDir(f)
 			if err != nil {
 				return err
 			}
 
-			if err = g.PushFiles(f); err != nil {
+			if err = gs.Push(f); err != nil {
 				return err
 			}
 
@@ -50,7 +50,7 @@ func (g syncService) PushFiles(dir SyncFile) error {
 			return err
 		}
 
-		f, err = g.syncProvider.CreateFile(f)
+		f, err = gs.syncProvider.CreateFile(f)
 	}
 
 	// TODO: Remove files from remote that are not in local

@@ -14,7 +14,7 @@ type SyncFile struct {
 	Data     []byte
 }
 
-type syncService struct {
+type gsyncService struct {
 	remoteGsyncDir string
 	localGsyncDir  string
 	syncProvider   SyncProvider
@@ -25,7 +25,7 @@ func NewService(localGsyncDir string, syncProvider SyncProvider) GsyncService {
 		localGsyncDir = os.Getenv("HOME") + "/Gsync"
 	}
 
-	err := CreateDir(localGsyncDir)
+	err := createDirs(localGsyncDir, getPath(os.Getenv("HOME"), ".gsync"))
 	if err != nil {
 		log.Fatalf("Error creating local gsync directory: %v", err)
 	}
@@ -40,15 +40,15 @@ func NewService(localGsyncDir string, syncProvider SyncProvider) GsyncService {
 		log.Fatalf("Error creating remote Gsync directory: %v", err)
 	}
 
-	return &syncService{dir.Id, localGsyncDir, syncProvider}
+	return &gsyncService{dir.Id, localGsyncDir, syncProvider}
 }
 
-func (g syncService) SyncFiles(dir SyncFile) error {
-	if err := g.PushFiles(dir); err != nil {
+func (gs gsyncService) Sync(dir SyncFile) error {
+	if err := gs.Push(dir); err != nil {
 		return err
 	}
 
-	if err := g.PullFiles(dir); err != nil {
+	if err := gs.Pull(dir); err != nil {
 		return err
 	}
 

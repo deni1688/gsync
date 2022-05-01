@@ -10,7 +10,7 @@ type SyncProvider interface {
 }
 
 type GsyncService interface {
-	PullFiles(dir SyncFile) error
-	PushFiles(dir SyncFile) error
-	SyncFiles(dir SyncFile) error
+	Pull(dir SyncFile) error
+	Push(dir SyncFile) error
+	Sync(dir SyncFile) error
 }

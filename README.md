@@ -68,4 +68,4 @@ sync sync files between a remote gs and local directory
 
 ## License
 
-gsync is licensed under the [MIT license](https://github.io/deni1688/gsync/blob/master/LICENSE)
+gsync is licensed under the [MIT license](https://raw.githubusercontent.com/deni1688/gsync/master/LICENSE)

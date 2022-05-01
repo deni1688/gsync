@@ -8,6 +8,7 @@ will be possible to use the tool to synchronize files between multiple providers
 
 ## Table of contents
 
+* [Installation](#installation)
 * [Usage](#usage)
 * [License](#license)
 

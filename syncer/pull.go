@@ -23,14 +23,14 @@ func (gs gsyncService) Pull(dir SyncFile) error {
 		return err
 	}
 
-	if err = gs.cleanLocalFiles(dir, files); err != nil {
+	if err = gs.removeFilesNotInRemote(dir, files); err != nil {
 		return err
 	}
 
-	return gs.downloadFiles(dir, files)
+	return gs.downloadFilesFromRemote(dir, files)
 }
 
-func (gs gsyncService) cleanLocalFiles(dir SyncFile, files []SyncFile) error {
+func (gs gsyncService) removeFilesNotInRemote(dir SyncFile, files []SyncFile) error {
 	list, err := os.ReadDir(dir.Path)
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func (gs gsyncService) cleanLocalFiles(dir SyncFile, files []SyncFile) error {
 	return err
 }
 
-func (gs gsyncService) downloadFiles(dir SyncFile, files []SyncFile) error {
+func (gs gsyncService) downloadFilesFromRemote(dir SyncFile, files []SyncFile) error {
 	var wg sync.WaitGroup
 	errCh := make(chan error, 1)
 

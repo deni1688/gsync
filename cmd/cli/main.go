@@ -1,10 +1,10 @@
 package main
 
 import (
-	"deni1688/gsync/infra/aws"
-	"deni1688/gsync/infra/cobra"
-	"deni1688/gsync/infra/google"
-	"deni1688/gsync/syncer"
+	"deni1688/gsync/domain"
+	"deni1688/gsync/infrastructure/aws"
+	"deni1688/gsync/infrastructure/cobra"
+	"deni1688/gsync/infrastructure/google"
 	"log"
 	"os"
 )
@@ -17,21 +17,19 @@ var (
 
 func main() {
 	sp := selectSyncProvider(providerConfig)
+	gs := domain.NewService(localDir, sp)
 
-	gs := syncer.NewService(localDir, sp)
-	c := cobra.NewCLI(gs)
-
-	if err := c.Execute(); err != nil {
+	if err := cobra.NewCLI(gs).Execute(); err != nil {
 		log.Fatalf("Error starting the CLI runtime: %v", err)
 	}
 }
 
-func selectSyncProvider(providerConfig string) syncer.SyncProvider {
+func selectSyncProvider(providerConfig string) domain.SyncProvider {
 	if providerConfig == "" {
 		log.Fatalf("SYNC_PROVIDER env variable required! You can specify  google or aws")
 	}
 
-	var sp syncer.SyncProvider
+	var sp domain.SyncProvider
 	if providerConfig == "google" {
 		sp = google.NewSyncProvider(creds)
 	} else {

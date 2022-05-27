@@ -1,4 +1,4 @@
-package syncer
+package domain
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (gs gsyncService) Pull(dir SyncFile) error {
+func (gs gsyncService) Pull(dir SyncTarget) error {
 	if dir.Name == "Gsync" {
 		dir.Id = gs.remoteGsyncDir
 		dir.Path = gs.localGsyncDir
@@ -30,7 +30,7 @@ func (gs gsyncService) Pull(dir SyncFile) error {
 	return gs.downloadFilesFromRemote(dir, files)
 }
 
-func (gs gsyncService) removeFilesNotInRemote(dir SyncFile, files []SyncFile) error {
+func (gs gsyncService) removeFilesNotInRemote(dir SyncTarget, files []SyncTarget) error {
 	list, err := os.ReadDir(dir.Path)
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func (gs gsyncService) removeFilesNotInRemote(dir SyncFile, files []SyncFile) er
 	return err
 }
 
-func (gs gsyncService) downloadFilesFromRemote(dir SyncFile, files []SyncFile) error {
+func (gs gsyncService) downloadFilesFromRemote(dir SyncTarget, files []SyncTarget) error {
 	var wg sync.WaitGroup
 	errCh := make(chan error, 1)
 
@@ -83,7 +83,7 @@ func (gs gsyncService) downloadFilesFromRemote(dir SyncFile, files []SyncFile) e
 		fullPath := getPath(dir.Path, file.Name)
 
 		wg.Add(1)
-		go func(wg *sync.WaitGroup, file SyncFile) {
+		go func(wg *sync.WaitGroup, file SyncTarget) {
 			defer wg.Done()
 
 			if gs.syncProvider.IsDir(file) {

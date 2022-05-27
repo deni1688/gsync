@@ -3,7 +3,7 @@ package google
 import (
 	"bytes"
 	"context"
-	syncer2 "deni1688/gsync/syncer"
+	syncer2 "deni1688/gsync/domain"
 	"fmt"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
@@ -51,17 +51,17 @@ func NewSyncProvider(credentialsPath string) syncer2.SyncProvider {
 	return &googleDriveSyncProvider{service}
 }
 
-func (s googleDriveSyncProvider) CreateDir(dir syncer2.SyncFile) (syncer2.SyncFile, error) {
+func (s googleDriveSyncProvider) CreateDir(dir syncer2.SyncTarget) (syncer2.SyncTarget, error) {
 	q := fmt.Sprintf("name = '%s' and trashed = false", dir.Name)
 
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType)").Q(q).Do()
 	if err != nil {
-		return syncer2.SyncFile{}, err
+		return syncer2.SyncTarget{}, err
 	}
 
 	if len(list.Files) > 0 {
 		f := list.Files[0]
-		return syncer2.SyncFile{
+		return syncer2.SyncTarget{
 			Id:       f.Id,
 			Name:     f.Name,
 			MimeType: f.MimeType,
@@ -78,10 +78,10 @@ func (s googleDriveSyncProvider) CreateDir(dir syncer2.SyncFile) (syncer2.SyncFi
 
 	file, err = s.service.Files.Create(file).Do()
 	if err != nil {
-		return syncer2.SyncFile{}, err
+		return syncer2.SyncTarget{}, err
 	}
 
-	return syncer2.SyncFile{
+	return syncer2.SyncTarget{
 		Id:       file.Id,
 		Name:     file.Name,
 		MimeType: file.MimeType,
@@ -97,25 +97,25 @@ func getParentId(f *drive.File) string {
 	return ""
 }
 
-func (s googleDriveSyncProvider) GetFile(syncFile syncer2.SyncFile) ([]byte, error) {
+func (s googleDriveSyncProvider) GetFile(syncTarget syncer2.SyncTarget) ([]byte, error) {
 	var err error
 	resp := new(http.Response)
 
-	if strings.Contains(syncFile.MimeType, "google-apps") {
-		resp, err = s.service.Files.Export(syncFile.Id, getExportMimeType(syncFile.MimeType)).Download()
+	if strings.Contains(syncTarget.MimeType, "google-apps") {
+		resp, err = s.service.Files.Export(syncTarget.Id, getExportMimeType(syncTarget.MimeType)).Download()
 		if err != nil {
-			return nil, fmt.Errorf("export failed for %s %v\n", syncFile.Path, err)
+			return nil, fmt.Errorf("export failed for %s %v\n", syncTarget.Path, err)
 		}
 	} else {
-		resp, err = s.service.Files.Get(syncFile.Id).Download()
+		resp, err = s.service.Files.Get(syncTarget.Id).Download()
 		if err != nil {
-			return nil, fmt.Errorf("download failed for %s %v\n", syncFile.Path, err)
+			return nil, fmt.Errorf("download failed for %s %v\n", syncTarget.Path, err)
 		}
 	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read resp for %s %v\n", syncFile.Path, err)
+		return nil, fmt.Errorf("failed to read resp for %s %v\n", syncTarget.Path, err)
 	}
 
 	return data, resp.Body.Close()
@@ -128,27 +128,27 @@ func getExportMimeType(driveMimeType string) string {
 	return "application/octet-stream"
 }
 
-func (s googleDriveSyncProvider) CreateFile(syncFile syncer2.SyncFile) (syncer2.SyncFile, error) {
-	file := &drive.File{Name: syncFile.Name, MimeType: syncFile.MimeType}
+func (s googleDriveSyncProvider) CreateFile(syncTarget syncer2.SyncTarget) (syncer2.SyncTarget, error) {
+	file := &drive.File{Name: syncTarget.Name, MimeType: syncTarget.MimeType}
 
-	if syncFile.ParentId != "" {
-		file.Parents = []string{syncFile.ParentId}
+	if syncTarget.ParentId != "" {
+		file.Parents = []string{syncTarget.ParentId}
 	}
 
-	file, err := s.service.Files.Create(file).Media(bytes.NewReader(syncFile.Data)).Do()
+	file, err := s.service.Files.Create(file).Media(bytes.NewReader(syncTarget.Data)).Do()
 	if err != nil {
-		return syncer2.SyncFile{}, err
+		return syncer2.SyncTarget{}, err
 	}
 
-	syncFile.Id = file.Id
+	syncTarget.Id = file.Id
 
-	return syncFile, nil
+	return syncTarget, nil
 }
 
-func (s googleDriveSyncProvider) UpdateFile(syncFile syncer2.SyncFile) error {
-	file := &drive.File{Id: syncFile.Id, Name: syncFile.Name, MimeType: syncFile.MimeType}
+func (s googleDriveSyncProvider) UpdateFile(syncTarget syncer2.SyncTarget) error {
+	file := &drive.File{Id: syncTarget.Id, Name: syncTarget.Name, MimeType: syncTarget.MimeType}
 
-	file, err := s.service.Files.Update(file.Id, &drive.File{Name: file.Name, MimeType: file.MimeType}).Media(bytes.NewReader(syncFile.Data)).Do()
+	file, err := s.service.Files.Update(file.Id, &drive.File{Name: file.Name, MimeType: file.MimeType}).Media(bytes.NewReader(syncTarget.Data)).Do()
 	if err != nil {
 		log.Printf("Could update file: %v", err)
 		return err
@@ -157,7 +157,7 @@ func (s googleDriveSyncProvider) UpdateFile(syncFile syncer2.SyncFile) error {
 	return nil
 }
 
-func (s googleDriveSyncProvider) ListFiles(dir syncer2.SyncFile) ([]syncer2.SyncFile, error) {
+func (s googleDriveSyncProvider) ListFiles(dir syncer2.SyncTarget) ([]syncer2.SyncTarget, error) {
 	q := fmt.Sprintf("'%s' in parents and trashed = false", dir.Id)
 
 	list, err := s.service.Files.List().Fields("files(id, name, mimeType, shortcutDetails)").Q(q).Do()
@@ -165,10 +165,10 @@ func (s googleDriveSyncProvider) ListFiles(dir syncer2.SyncFile) ([]syncer2.Sync
 		return nil, err
 	}
 
-	var files []syncer2.SyncFile
+	var files []syncer2.SyncTarget
 
 	for _, f := range list.Files {
-		sf := syncer2.SyncFile{
+		sf := syncer2.SyncTarget{
 			Name:     f.Name,
 			ParentId: getParentId(f),
 			Path:     dir.Path + "/" + f.Name,
@@ -188,6 +188,6 @@ func (s googleDriveSyncProvider) ListFiles(dir syncer2.SyncFile) ([]syncer2.Sync
 	return files, nil
 }
 
-func (s googleDriveSyncProvider) IsDir(syncFile syncer2.SyncFile) bool {
-	return syncFile.MimeType == "application/vnd.google-apps.folder"
+func (s googleDriveSyncProvider) IsDir(syncTarget syncer2.SyncTarget) bool {
+	return syncTarget.MimeType == "application/vnd.google-apps.folder"
 }

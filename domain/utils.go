@@ -1,11 +1,11 @@
-package syncer
+package domain
 
 import (
 	"os"
 	"strings"
 )
 
-func fileListContains(fileList []SyncFile, name string) bool {
+func fileListContains(fileList []SyncTarget, name string) bool {
 	for _, file := range fileList {
 		if file.Name == name {
 			return true

@@ -1,4 +1,4 @@
-package syncer
+package domain
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func (gs gsyncService) Push(dir SyncFile) error {
+func (gs gsyncService) Push(dir SyncTarget) error {
 	if dir.Name == "Gsync" {
 		dir.Id = gs.remoteGsyncDir
 		dir.Path = gs.localGsyncDir
@@ -26,7 +26,7 @@ func (gs gsyncService) Push(dir SyncFile) error {
 
 		log.Printf("Pushing %s", fullPath)
 
-		f := SyncFile{
+		f := SyncTarget{
 			Name:     file.Name(),
 			Path:     fullPath,
 			ParentId: dir.Id,

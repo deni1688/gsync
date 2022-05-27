@@ -1,11 +1,11 @@
-package syncer
+package domain
 
 import (
 	"log"
 	"os"
 )
 
-type SyncFile struct {
+type SyncTarget struct {
 	Id       string
 	Name     string
 	MimeType string
@@ -30,7 +30,7 @@ func NewService(localGsyncDir string, syncProvider SyncProvider) GsyncService {
 		log.Fatalf("Error creating local gsync directory: %v", err)
 	}
 
-	dir := SyncFile{
+	dir := SyncTarget{
 		Name: "Gsync",
 		Path: localGsyncDir,
 	}
@@ -41,16 +41,4 @@ func NewService(localGsyncDir string, syncProvider SyncProvider) GsyncService {
 	}
 
 	return &gsyncService{dir.Id, localGsyncDir, syncProvider}
-}
-
-func (gs gsyncService) Sync(dir SyncFile) error {
-	if err := gs.Push(dir); err != nil {
-		return err
-	}
-
-	if err := gs.Pull(dir); err != nil {
-		return err
-	}
-
-	return nil
 }

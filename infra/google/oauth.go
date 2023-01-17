@@ -3,12 +3,13 @@ package google
 import (
 	"encoding/json"
 	"fmt"
-	"golang.org/x/net/context"
-	"golang.org/x/oauth2"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+
+	"golang.org/x/net/context"
+	"golang.org/x/oauth2"
 )
 
 const successHtml = `
@@ -49,7 +50,10 @@ func getTokenFromWeb(config *oauth2.Config) *oauth2.Token {
 
 	cmd := exec.Command("xdg-open", authURL)
 	if err := cmd.Start(); err != nil {
-		log.Fatalf("Unable to open browser: %v", err)
+		cmd = exec.Command("open", authURL)
+		if err = cmd.Start(); err != nil {
+			log.Fatalf("Unable to open browser: %v", err)
+		}
 	}
 
 	codeCh := make(chan string)

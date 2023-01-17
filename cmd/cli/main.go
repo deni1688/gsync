@@ -2,9 +2,9 @@ package main
 
 import (
 	"deni1688/gsync/domain"
-	"deni1688/gsync/infrastructure/aws"
-	"deni1688/gsync/infrastructure/cobra"
-	"deni1688/gsync/infrastructure/google"
+	"deni1688/gsync/infra/aws"
+	"deni1688/gsync/infra/cobra"
+	"deni1688/gsync/infra/google"
 	"log"
 	"os"
 )
